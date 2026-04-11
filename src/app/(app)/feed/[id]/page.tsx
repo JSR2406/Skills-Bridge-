@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { subscribeToDoubt } from '@/features/doubts/api/doubts';
+import { subscribeToDoubt, voteDoubt } from '@/features/doubts/api/doubts';
 import { subscribeToAnswers, postAnswer, acceptAnswer, Answer } from '@/features/doubts/api/answers';
 import { Doubt } from '@/features/doubts/types';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
@@ -18,7 +18,9 @@ import {
   ArrowLeft,
   Loader2,
   Check,
-  Send
+  Send,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -78,6 +80,19 @@ export default function DoubtDetailPage() {
     }
   };
 
+  const handleVote = async (value: 1 | -1) => {
+    if (!user) {
+      toast.error('Please log in to vote.');
+      return;
+    }
+    
+    try {
+      await voteDoubt(params.id, user.uid, value);
+    } catch (err: any) {
+      toast.error('Failed to register vote.');
+    }
+  };
+
   const handleAcceptAnswer = async (answer: Answer) => {
     if (!user || !doubt) return;
     if (user.uid !== doubt.authorId) {
@@ -133,8 +148,28 @@ export default function DoubtDetailPage() {
         {/* subtle gradient flare top right */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#4fdbc8]/10 to-[#ddb7ff]/10 blur-[60px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3" />
         
-        <div className="p-6 sm:p-8 relative z-10">
-          <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="p-6 sm:p-8 relative z-10 flex flex-col sm:flex-row gap-6 sm:gap-8">
+          {/* Voting Sidebar */}
+          <div className="flex sm:flex-col items-center sm:items-center shrink-0 mb-2 sm:mb-0 bg-[rgba(15,23,37,0.4)] sm:bg-transparent rounded-xl p-2 sm:p-0 w-fit">
+             <button 
+                onClick={() => handleVote(1)} 
+                className="p-1.5 rounded-md text-[#8899b8] hover:bg-[rgba(79,219,200,0.1)] hover:text-[#4fdbc8] transition-colors"
+                title="Upvote"
+             >
+               <ChevronUp className="w-6 h-6 sm:w-8 sm:h-8" />
+             </button>
+             <span className="text-lg sm:text-2xl font-bold text-[#dae2fd] mx-3 sm:mx-0 sm:my-2">{doubt.voteScore || 0}</span>
+             <button 
+                onClick={() => handleVote(-1)} 
+                className="p-1.5 rounded-md text-[#8899b8] hover:bg-[rgba(221,183,255,0.1)] hover:text-[#ddb7ff] transition-colors"
+                title="Downvote"
+             >
+               <ChevronDown className="w-6 h-6 sm:w-8 sm:h-8" />
+             </button>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
             {doubt.isResolved && (
               <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: 'rgba(79, 219, 200, 0.1)', color: '#4fdbc8', border: '1px solid rgba(79, 219, 200, 0.2)' }}>
                 <CheckCircle2 className="w-3.5 h-3.5" /> Resolved
@@ -184,6 +219,7 @@ export default function DoubtDetailPage() {
             prose-code:text-[#ddb7ff] prose-code:bg-[rgba(221,183,255,0.08)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md"
             dangerouslySetInnerHTML={{ __html: doubt.content }}
           />
+          </div>
         </div>
       </div>
 

@@ -18,21 +18,21 @@ export async function POST(req: Request) {
 
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    const prompt = `
-    Based on the following question:
-    Title: ${title}
-    Description: ${content}
-    
-    Suggest up to 5 relevant technical tags (1 word each if possible, hyphenated if necessary).
-    Return ONLY a comma-separated list of tags, all lowercase. Nothing else.
-    Example output: react, javascript, frontend
-    `;
+    const prompt = `Based on the following question:
+Title: ${title || ''}
+Description: ${content || ''}
+
+Suggest up to 5 relevant technical tags (1 word each if possible, hyphenated if necessary).
+Return ONLY a comma-separated list of tags, all lowercase. Nothing else.
+Example output: react, javascript, frontend`;
 
     const result = await model.generateContent(prompt);
     let text = result.response.text().trim();
-    
-    // Cleanup AI output just in case
-    const rawTags = text.split(',').map(t => t.trim().toLowerCase().replace(/[^a-z0-9-]/g, '')).filter(Boolean);
+
+    const rawTags = text
+      .split(',')
+      .map((t: string) => t.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''))
+      .filter(Boolean);
     const tags = Array.from(new Set(rawTags)).slice(0, 5);
 
     return NextResponse.json({ tags });

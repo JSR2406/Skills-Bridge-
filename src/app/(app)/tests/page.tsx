@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { getUserAttempts, saveGeneratedTest } from '@/features/tests/api';
-import { TestAttempt } from '@/features/tests/types';
+import { getUserAttempts, saveGeneratedTest, getAvailableTests } from '@/features/tests/api';
+import { TestAttempt, PracticeTest } from '@/features/tests/types';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { BrainCircuit, BookCheck, Clock, Loader2, Sparkles, TrendingUp, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,6 +14,7 @@ export default function PracticeTestsPage() {
   const router = useRouter();
 
   const [history, setHistory] = useState<TestAttempt[]>([]);
+  const [availableTests, setAvailableTests] = useState<PracticeTest[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
   // Generate Test Modal State
@@ -27,10 +28,14 @@ export default function PracticeTestsPage() {
     if (!user) return;
     async function load() {
       try {
-        const data = await getUserAttempts(user!.uid);
-        setHistory(data);
+        const [historyData, availableData] = await Promise.all([
+          getUserAttempts(user!.uid),
+          getAvailableTests()
+        ]);
+        setHistory(historyData);
+        setAvailableTests(availableData);
       } catch (err) {
-        console.error('Failed to load test history:', err);
+        console.error('Failed to load tests:', err);
       } finally {
         setIsLoadingHistory(false);
       }
@@ -214,6 +219,49 @@ export default function PracticeTestsPage() {
           </div>
         </div>
       )}
+
+      {/* ── Available Practice Tests ── */}
+      <div className="pt-4 pb-8">
+        <h2 className="text-xl font-extrabold mb-6 flex items-center gap-3 text-[#dae2fd]" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          <div className="w-10 h-10 rounded-xl bg-[rgba(79,219,200,0.08)] border border-[rgba(79,219,200,0.2)] flex items-center justify-center">
+            <BookCheck className="w-5 h-5 text-[#4fdbc8]" />
+          </div>
+          Available Practice Tests
+        </h2>
+        {isLoadingHistory ? (
+          <div className="grid md:grid-cols-2 gap-5"><LoadingSkeleton /><LoadingSkeleton /></div>
+        ) : availableTests.length === 0 ? (
+          <div className="text-center py-10 glass-card border-dashed">
+            <p className="text-sm text-[#8899b8]">No practice tests available at the moment.</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {availableTests.map((test, i) => (
+              <div 
+                key={test.id} 
+                onClick={() => router.push(`/tests/${test.id}`)}
+                className="glass-card group flex flex-col cursor-pointer hover:-translate-y-1 transition-all duration-300 relative overflow-hidden p-5"
+                style={{ animationDelay: `${i * 50}ms` }}
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div className="px-2 py-1 bg-[rgba(221,183,255,0.1)] text-[#ddb7ff] text-[10px] font-bold rounded uppercase tracking-wider">
+                    {test.difficulty}
+                  </div>
+                  <div className="text-[#8899b8] text-xs flex items-center"><Clock className="w-3 h-3 mr-1"/> {test.durationMinutes}m</div>
+                </div>
+                <h4 className="font-extrabold text-[#dae2fd] text-lg mb-1 group-hover:text-[#4fdbc8] transition-colors">{test.topic}</h4>
+                <p className="text-xs text-[#8899b8] mb-4">{test.subject}</p>
+                <div className="mt-auto pt-4 border-t border-[rgba(255,255,255,0.05)] flex items-center justify-between">
+                  <span className="text-xs text-[#8899b8]">{test.questions?.length || 0} Questions</span>
+                  <span className="text-[#4fdbc8] font-bold text-sm bg-[rgba(79,219,200,0.1)] px-3 py-1 rounded-lg flex items-center group-hover:bg-[#4fdbc8] group-hover:text-black transition-all">
+                    Start Test <TrendingUp className="w-3 h-3 ml-1" />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* ── History Section ── */}
       <div className="pt-4">

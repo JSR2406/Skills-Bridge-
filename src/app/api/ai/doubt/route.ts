@@ -18,16 +18,14 @@ export async function POST(req: Request) {
 
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    const prompt = `
-    You are an expert tutor on the SkillBridge platform. 
-    A student has asked the following doubt:
-    
-    Title: ${title}
-    Description: ${content}
-    
-    Please provide a helpful, accurate, and step-by-step explanation to resolve their doubt.
-    Format your response in neat Markdown. Use code blocks if applicable.
-    `;
+    const prompt = `You are an expert tutor on the SkillBridge platform. 
+A student has asked the following doubt:
+
+Title: ${title}
+Description: ${content}
+
+Please provide a helpful, accurate, and step-by-step explanation to resolve their doubt.
+Format your response in neat Markdown. Use code blocks if applicable.`;
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();

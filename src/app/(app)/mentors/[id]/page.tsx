@@ -10,8 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
-import { Star, Video, Clock, IndianRupee, Loader2, Calendar } from 'lucide-react';
+import { Star, Video, Clock, IndianRupee, Loader2, Calendar, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import { getOrCreateConversation } from '@/features/messages/api';
 
 export default function MentorProfilePage() {
   const params = useParams() as { id: string };
@@ -122,6 +123,22 @@ export default function MentorProfilePage() {
     }
   };
 
+  const handleMessageMentor = async () => {
+    if (!user || !profile || !mentor) {
+      toast.error('Please login to message this mentor');
+      return;
+    }
+    try {
+      await getOrCreateConversation(
+        user.uid, profile.name, profile.avatarUrl || '',
+        mentor.userId, mentor.name, mentor.avatarUrl || ''
+      );
+      router.push('/messages');
+    } catch {
+      toast.error('Could not open conversation');
+    }
+  };
+
   if (isLoading) return <LoadingSkeleton />;
   if (!mentor) return <div className="text-center py-20 text-muted-foreground">Mentor not found</div>;
 
@@ -146,12 +163,22 @@ export default function MentorProfilePage() {
                 <p className="text-brand-400 font-medium">{mentor.headline}</p>
                 <p className="text-sm text-muted-foreground">{mentor.college}</p>
               </div>
-              <div className="flex gap-4 items-center">
+              <div className="flex gap-4 items-center flex-wrap">
                 <div className="flex items-center gap-1.5 bg-surface-elevated px-3 py-1.5 rounded-full border border-border/50">
                   <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                   <span className="font-semibold text-sm">{mentor.averageRating > 0 ? mentor.averageRating.toFixed(1) : 'New'}</span>
                   <span className="text-xs text-muted-foreground">({mentor.totalRatings})</span>
                 </div>
+                {user?.uid !== mentor.userId && (
+                  <button
+                    onClick={handleMessageMentor}
+                    className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold text-[#4fdbc8] transition-all hover:opacity-90"
+                    style={{ background: 'rgba(79,219,200,0.1)', border: '1px solid rgba(79,219,200,0.25)' }}
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    Message
+                  </button>
+                )}
               </div>
             </div>
           </div>

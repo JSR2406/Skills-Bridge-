@@ -10,6 +10,7 @@ import { BADGES } from '@/features/reputation/api';
 import { Trophy, Flame, Target, UserCircle2, Settings } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function ProfilePage() {
   const { user, profile } = useAuth();
@@ -57,9 +58,11 @@ export default function ProfilePage() {
           </div>
         </div>
         <div className="absolute top-4 right-4 flex gap-2">
-          <Button variant="secondary" size="sm" className="bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-md">
-            <Settings className="w-4 h-4 mr-2" /> settings
-          </Button>
+          <Link href="/settings">
+            <Button variant="secondary" size="sm" className="bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-md">
+              <Settings className="w-4 h-4 mr-2" /> settings
+            </Button>
+          </Link>
         </div>
       </div>
 

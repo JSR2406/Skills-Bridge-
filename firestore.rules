@@ -1,18 +1,88 @@
-rules_version='2'
-
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
-      allow read, write: if request.time < timestamp.date(2026, 5, 9);
+    
+    function isAuth() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    match /users/{userId} {
+      // Anyone can view profiles
+      allow read: if true;
+      allow write: if isAuth(); 
+    }
+
+    match /doubts/{doubtId} {
+      allow read: if true;
+      allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
+      // Author and admin can edit/delete doubts. Also allows answering updates (responsesCount increment)
+      allow update: if isAuth();
+      allow delete: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    match /answers/{answerId} {
+      allow read: if true;
+      allow create: if isAuth() && request.resource.data.authorId == request.auth.uid;
+      // Needed for doubt authors picking answers
+      allow update: if isAuth();
+      allow delete: if isAuth() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    match /notifications/{notifId} {
+      // Users can read own notifications
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      // Anyone can create a notification to another user (e.g. answer alert)
+      allow write: if isAuth();
+    }
+
+    match /reputationEvents/{eventId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow write: if isAuth();
+    }
+
+    match /tests/{testId} {
+      allow read: if true;
+      allow write: if isAuth();
+    }
+
+    match /testAttempts/{attemptId} {
+      // Users can only see their own test attempts
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      // Users can only submit attempts for themselves
+      allow write: if isAuth() && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /mentors/{mentorId} {
+      allow read: if isAuth();
+      allow write: if isAuth();
+    }
+
+    match /mentorSlots/{slotId} {
+      allow read: if isAuth();
+      allow write: if isAuth();
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAuth();
+      allow write: if isAuth();
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isAuth(); 
+      allow write: if isAuth();
+    }
+    
+    match /conversations/{conversationId}/messages/{messageId} {
+      allow read: if isAuth();
+      allow write: if isAuth();
     }
   }
 }

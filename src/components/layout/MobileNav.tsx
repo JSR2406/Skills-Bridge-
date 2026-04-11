@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, MessageSquarePlus, Calendar, BookOpenCheck } from 'lucide-react';
+import { Home, MessageSquarePlus, Calendar, BookOpenCheck, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { name: 'Feed', href: '/feed', icon: Home },
   { name: 'Ask', href: '/ask', icon: MessageSquarePlus },
+  { name: 'Messages', href: '/messages', icon: MessageSquare },
   { name: 'Sessions', href: '/sessions', icon: Calendar },
   { name: 'Tests', href: '/tests', icon: BookOpenCheck },
 ];

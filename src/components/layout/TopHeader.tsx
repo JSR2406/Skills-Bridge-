@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { Menu, Search, LogOut, User as UserIcon, Settings, Bell, Zap, BellRing } from 'lucide-react';
+import { Menu, Search, LogOut, User as UserIcon, Settings, Bell, Zap, BellRing, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { auth } from '@/lib/firebase/config';
@@ -25,6 +25,7 @@ export function TopHeader() {
   const router = useRouter();
 
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [searchFocused, setSearchFocused] = useState(false);
   const isFirstLoad = useRef(true);
   const knownNotifIds = useRef(new Set<string>());
@@ -72,6 +73,21 @@ export function TopHeader() {
       };
     });
     
+    return () => { isSubscribed = false; };
+  }, [profile?.uid]);
+
+  // Subscribe to unread messages
+  useEffect(() => {
+    if (!profile?.uid) return;
+    let isSubscribed = true;
+    import('@/features/messages/api').then(({ subscribeToConversations }) => {
+      const unsub = subscribeToConversations(profile.uid, (convs) => {
+        if (!isSubscribed) return;
+        const total = convs.reduce((acc, c) => acc + (profile?.uid ? (c.unreadCount?.[profile.uid] || 0) : 0), 0);
+        setUnreadMessages(total);
+      });
+      return unsub;
+    });
     return () => { isSubscribed = false; };
   }, [profile?.uid]);
 
@@ -144,6 +160,23 @@ export function TopHeader() {
           </div>
         )}
 
+        {/* Messages */}
+        <Link href="/messages">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative w-9 h-9 rounded-lg text-[#8899b8] hover:text-[#ddb7ff] hover:bg-[rgba(221,183,255,0.08)] transition-colors"
+          >
+            <MessageSquare className="w-4 h-4" />
+            {unreadMessages > 0 && (
+              <span
+                className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border-2 border-[#0b1326]"
+                style={{ background: '#ddb7ff', boxShadow: '0 0 8px rgba(221,183,255,0.6)' }}
+              />
+            )}
+          </Button>
+        </Link>
+
         {/* Notifications */}
         <Link href="/notifications">
           <Button
@@ -163,8 +196,8 @@ export function TopHeader() {
 
         {/* Avatar + Dropdown */}
         <DropdownMenu>
-          <DropdownMenuTrigger>
-            <button className="relative h-9 w-9 rounded-full outline-none ring-2 ring-transparent hover:ring-[rgba(79,219,200,0.3)] transition-all">
+          <DropdownMenuTrigger className="relative h-9 w-9 rounded-full outline-none ring-2 ring-transparent hover:ring-[rgba(79,219,200,0.3)] transition-all bg-transparent border-0 p-0 cursor-pointer flex items-center justify-center m-0">
+            <div className="relative h-9 w-9">
               <Avatar className="h-9 w-9">
                 <AvatarImage src={profile?.avatarUrl} alt={profile?.name || 'User'} />
                 <AvatarFallback
@@ -182,7 +215,7 @@ export function TopHeader() {
                 className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#0b1326]"
                 style={{ background: '#4fdbc8', boxShadow: '0 0 6px rgba(79,219,200,0.5)' }}
               />
-            </button>
+            </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-60"

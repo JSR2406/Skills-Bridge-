@@ -22,6 +22,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Write your de
       }),
     ],
     content,
+    immediatelyRender: false,
     editorProps: {
       attributes: {
         class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[150px] p-4',

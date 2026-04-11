@@ -14,13 +14,15 @@ import {
   Settings,
   ShieldAlert,
   Sparkles,
-  Trophy
+  Trophy,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
 const NAV_ITEMS = [
   { name: 'Feed', href: '/feed', icon: Home },
   { name: 'Ask Doubt', href: '/ask', icon: MessageSquarePlus },
+  { name: 'Messages', href: '/messages', icon: MessageSquare },
   { name: 'Mentors', href: '/mentors', icon: Users },
   { name: 'My Sessions', href: '/sessions', icon: Calendar },
   { name: 'Practice Tests', href: '/tests', icon: BookOpenCheck },

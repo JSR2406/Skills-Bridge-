@@ -26,9 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     // Defaulting to dark mode immediately to avoid flash
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background min-h-screen flex flex-col`}
+        suppressHydrationWarning
       >
         <AuthProvider>
           {children}

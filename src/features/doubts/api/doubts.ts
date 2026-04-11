@@ -94,15 +94,24 @@ export async function voteDoubt(doubtId: string, userId: string, voteValue: 1 | 
   // Using a combined doc ID for vote to ensure one vote per user per doubt
   const voteRef = doc(db, VOTES_COLLECTION, `${userId}_${doubtId}`);
 
+  let shouldAwardPoints = false;
+  let doubtAuthorId = '';
+
   await runTransaction(db, async (transaction) => {
     const doubtDoc = await transaction.get(doubtRef);
     if (!doubtDoc.exists()) throw new Error('Doubt does not exist');
+    
+    doubtAuthorId = doubtDoc.data().authorId;
 
     const voteDoc = await transaction.get(voteRef);
     let currentVoteValue = 0;
 
     if (voteDoc.exists()) {
       currentVoteValue = voteDoc.data().value;
+    }
+
+    if (currentVoteValue !== 1 && voteValue === 1) {
+      shouldAwardPoints = true;
     }
 
     if (currentVoteValue === voteValue) {
@@ -144,4 +153,10 @@ export async function voteDoubt(doubtId: string, userId: string, voteValue: 1 | 
       });
     }
   });
+
+  if (shouldAwardPoints && doubtAuthorId && doubtAuthorId !== userId) {
+    import('../../reputation/api').then(({ awardPoints }) => {
+      awardPoints(doubtAuthorId, 'doubt_upvoted', `${doubtId}_${userId}`, 'doubt_vote').catch(console.error);
+    });
+  }
 }
