@@ -21,7 +21,6 @@
   },
   "auth": {
     "providers": {
-      "emailPassword": true,
       "googleSignIn": {
         "oAuthBrandDisplayName": "SkillBridge",
         "supportEmail": "janmejaysingh2406@gmail.com"
