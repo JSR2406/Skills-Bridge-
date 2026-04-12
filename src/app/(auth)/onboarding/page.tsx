@@ -222,7 +222,7 @@ export default function OnboardingPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Semester</Label>
-                      <Select value={formData.semester} onValueChange={v => setFormData({...formData, semester: v})}>
+                      <Select value={formData.semester} onValueChange={v => setFormData({...formData, semester: v || '1'})}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {[1,2,3,4,5,6,7,8].map(s => <SelectItem key={s} value={s.toString()}>Semester {s}</SelectItem>)}

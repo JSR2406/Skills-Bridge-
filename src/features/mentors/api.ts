@@ -33,7 +33,7 @@ export async function getApprovedMentors(): Promise<MentorProfile[]> {
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as MentorProfile;
     })
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    .sort((a, b) => (b.createdAt as any).getTime() - (a.createdAt as any).getTime());
 }
 
 export async function getMentorProfile(userId: string): Promise<MentorProfile | null> {
@@ -107,7 +107,7 @@ export async function getMentorSlots(mentorId: string): Promise<MentorSlot[]> {
       } as MentorSlot;
     })
     .filter(slot => slot.startTime > now)
-    .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+    .sort((a, b) => (a.startTime as any).getTime() - (b.startTime as any).getTime());
 }
 
 import { onSnapshot } from 'firebase/firestore';
@@ -133,7 +133,7 @@ export function subscribeToMentorSlots(mentorId: string, callback: (slots: Mento
         } as MentorSlot;
       })
       .filter(slot => slot.startTime > now)
-      .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+      .sort((a, b) => (a.startTime as any).getTime() - (b.startTime as any).getTime());
     callback(slots);
   });
 }
@@ -202,7 +202,7 @@ export async function getUserSessions(userId: string): Promise<SessionBooking[]>
         createdAt: data.createdAt?.toDate() || new Date(),
       } as SessionBooking;
     })
-    .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+    .sort((a, b) => (b.startTime as any).getTime() - (a.startTime as any).getTime());
 }
 
 export function subscribeToUserSessions(userId: string, callback: (sessions: SessionBooking[]) => void) {

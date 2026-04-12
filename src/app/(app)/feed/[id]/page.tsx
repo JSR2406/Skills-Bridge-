@@ -145,12 +145,13 @@ export default function DoubtDetailPage() {
         <QuickAddTaskButton 
           title={`Follow up: ${doubt.title}`}
           type="follow-up"
-          subject={doubt.subject}
+          subject={doubt.subject || (doubt.tags.length > 0 ? doubt.tags[0] : 'General')}
           relatedDoubtId={doubt.id}
           buttonText="Schedule Follow-up"
           variant="outline"
           className="border-brand-500/20 text-brand-400 hover:bg-brand-500/10"
         />
+
       </div>
 
       {/* ── Doubt Header ── */}

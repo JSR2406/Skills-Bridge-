@@ -8,7 +8,9 @@ export interface Doubt {
   title: string;
   content: string;
   tags: string[];
+  subject?: string;
   upvotes: number;
+
   downvotes: number;
   voteScore: number;
   responsesCount: number;
