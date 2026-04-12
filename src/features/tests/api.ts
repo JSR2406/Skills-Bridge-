@@ -50,10 +50,10 @@ export async function saveTestAttempt(attemptData: Omit<TestAttempt, 'id' | 'sub
   import('../notifications/utils').then(({ sendNotification }) => {
     sendNotification({
       userId: attemptData.userId,
-      title: 'Practice Test Completed! 🎯',
-      message: `You scored ${attemptData.score}/${attemptData.totalQuestions}. Keep up the great work! +15 pts.`,
+      title: 'Test Completed',
+      body: `You scored ${attemptData.score}/${attemptData.totalQuestions}. Keep up the great work! +15 pts.`,
       type: 'success',
-      link: `/tests/results/${ref.id}`,
+      url: `/tests/results/${ref.id}`,
     }).catch(console.error);
   });
   

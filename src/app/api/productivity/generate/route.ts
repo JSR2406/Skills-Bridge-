@@ -17,7 +17,7 @@ ${COACH_PROMPT}
 USER CONTEXT:
 ${JSON.stringify(context, null, 2)}
 
-Provide the JSON Study Plan now:
+Provide the JSON Study Plan now. ONLY output the raw JSON object, without any markdown formatting like \`\`\`json.
 `;
 
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -27,8 +27,7 @@ Provide the JSON Study Plan now:
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash-lite-preview-02-05:free",
-        response_format: { type: "json_object" },
+        model: "google/gemini-2.0-flash-exp:free",
         messages: [
           { role: "user", content: fullPrompt }
         ]
@@ -37,15 +36,20 @@ Provide the JSON Study Plan now:
 
     if (!res.ok) {
       const err = await res.text();
-      throw new Error(`OpenRouter error: ${err}`);
+      console.error('Openrouter raw error:', err);
+      throw new Error(`OpenRouter error: ${res.statusText}`);
     }
 
     const json = await res.json();
-    let responseText = json.choices[0].message.content.trim();
+    let responseText = json.choices?.[0]?.message?.content || "";
+    responseText = responseText.trim();
     
     // Cleanup markdown code blocks if any
     if (responseText.startsWith('```json')) {
-      responseText = responseText.replace(/```json|```/g, '').trim();
+      responseText = responseText.replace(/^```json|```$/gm, '').trim();
+    }
+    if (responseText.startsWith('```')) {
+      responseText = responseText.replace(/^```|```$/gm, '').trim();
     }
 
     try {

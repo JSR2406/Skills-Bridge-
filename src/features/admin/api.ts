@@ -27,9 +27,9 @@ export async function updateUserRole(userId: string, targetRole: 'student' | 'me
     sendNotification({
       userId,
       title: 'Role Updated 🎉',
-      message: `Your account role has been upated to ${targetRole}.`,
+      body: `Your account role has been upated to ${targetRole}.`,
       type: 'success',
-      link: `/profile/${userId}`,
+      url: `/profile/${userId}`,
     }).catch(console.error);
   });
 

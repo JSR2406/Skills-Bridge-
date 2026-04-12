@@ -105,9 +105,9 @@ export async function postAnswer(
         sendNotification({
           userId: doubtData.authorId,
           title: 'New Answer to Your Doubt',
-          message: `${authorName} answered: "${doubtData.title}"`,
+          body: `${authorName} answered: "${doubtData.title}"`,
           type: 'info',
-          link: `/feed/${doubtId}`,
+          url: `/feed/${doubtId}`,
         }).catch(console.error);
       });
     }
@@ -152,10 +152,10 @@ export async function acceptAnswer(
     import('../../notifications/utils').then(({ sendNotification }) => {
       sendNotification({
         userId: answerAuthorId,
-        title: 'Your Answer was Accepted! 🎉',
-        message: 'You have been awarded points for your helpful answer.',
+        title: 'Answer Accepted!',
+        body: 'You have been awarded points for your helpful answer.',
         type: 'success',
-        link: `/feed/${doubtId}`,
+        url: `/feed/${doubtId}`,
       }).catch(console.error);
     });
   }

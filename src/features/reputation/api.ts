@@ -63,11 +63,11 @@ export async function checkAndAwardBadges(userId: string) {
       newBadges.forEach(badgeId => {
         const badge = BADGES[badgeId];
         sendNotification({
-          userId,
-          type: 'badge_unlocked',
-          title: 'New Badge Unlocked!',
-          message: `You've earned the "${badge.name}" badge. ${badge.description}`,
-          link: `/profile/${userId}`,
+          userId: userId,
+          title: 'New Badge Unlocked! 🏆',
+          body: `You've earned the "${badge.name}" badge. ${badge.description}`,
+          type: 'success',
+          url: `/profile/${userId}`,
         }).catch(console.error);
       });
     });
@@ -149,11 +149,11 @@ export async function processDailyLogin(userId: string) {
     // Notify streak increased
     import('../notifications/utils').then(({ sendNotification }) => {
       sendNotification({
-        userId,
-        title: 'Streak Increased! 🔥',
-        message: `You're on a ${(data.streakDays || 0) + 1}-day learning streak!`,
+        userId: userId,
+        title: 'Streak Increased 🔥',
+        body: `You're on a ${(data.streakDays || 0) + 1}-day learning streak!`,
         type: 'success',
-        link: `/profile/${userId}`,
+        url: `/profile/${userId}`,
       }).catch(console.error);
     });
   } else if (diffDays > 1) {
@@ -170,10 +170,10 @@ export async function processDailyLogin(userId: string) {
       import('../notifications/utils').then(({ sendNotification }) => {
         sendNotification({
           userId,
-          title: 'Welcome Back! 👋',
-          message: `Your streak was reset. Time to start a new learning streak!`,
+          title: 'Streak Lost 😢',
+          body: `Your streak was reset. Time to start a new learning streak!`,
           type: 'info',
-          link: `/profile/${userId}`,
+          url: `/profile/${userId}`,
         }).catch(console.error);
       });
     }

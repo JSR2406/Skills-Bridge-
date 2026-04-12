@@ -187,67 +187,98 @@ export async function confirmBookingPayment(
   const snap = await getDoc(bookingRef);
   if (snap.exists()) {
     const data = snap.data();
-    import('../../notifications/utils').then(({ sendNotification }) => {
+    import('../notifications/utils').then(({ sendNotification }) => {
       // Notify Mentor
       sendNotification({
         userId: data.mentorId,
-        title: 'New Session Booked!',
-        message: `${data.studentName} booked a session with you.`,
-        type: 'success',
-        link: `/sessions`,
+        title: 'New Session Booking',
+        body: `${data.studentName} booked a session with you.`,
+        type: 'info',
+        url: `/sessions`,
       }).catch(console.error);
 
       // Notify Student
       sendNotification({
         userId: data.studentId,
-        title: 'Booking Confirmed!',
-        message: `Your session with ${data.mentorName} is confirmed.`,
+        title: 'Session Confirmed',
+        body: `Your session with ${data.mentorName} is confirmed.`,
         type: 'success',
-        link: `/sessions`,
+        url: `/sessions`,
       }).catch(console.error);
     });
   }
 }
 
 export async function getUserSessions(userId: string): Promise<SessionBooking[]> {
-  const q = query(
-    collection(db, 'bookings'),
-    where('studentId', '==', userId)
-  );
+  const studentQ = query(collection(db, 'bookings'), where('studentId', '==', userId));
+  const mentorQ = query(collection(db, 'bookings'), where('mentorId', '==', userId));
   
-  const snap = await getDocs(q);
-  return snap.docs
-    .map(d => {
-      const data = d.data();
-      return {
-        id: d.id,
-        ...data,
-        startTime: data.startTime?.toDate() || new Date(),
-        endTime: data.endTime?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-      } as SessionBooking;
-    })
+  const [studentSnap, mentorSnap] = await Promise.all([getDocs(studentQ), getDocs(mentorQ)]);
+  
+  const sessionsMap = new Map<string, SessionBooking>();
+  
+  const processDoc = (d: any) => {
+    const data = d.data();
+    sessionsMap.set(d.id, {
+      id: d.id,
+      ...data,
+      startTime: data.startTime?.toDate() || new Date(),
+      endTime: data.endTime?.toDate() || new Date(),
+      createdAt: data.createdAt?.toDate() || new Date(),
+    } as SessionBooking);
+  };
+  
+  studentSnap.docs.forEach(processDoc);
+  mentorSnap.docs.forEach(processDoc);
+  
+  return Array.from(sessionsMap.values())
     .sort((a, b) => (b.startTime as any).getTime() - (a.startTime as any).getTime());
 }
 
 export function subscribeToUserSessions(userId: string, callback: (sessions: SessionBooking[]) => void) {
-  const q = query(
-    collection(db, 'bookings'),
-    where('studentId', '==', userId),
-    orderBy('startTime', 'desc')
-  );
+  const studentQ = query(collection(db, 'bookings'), where('studentId', '==', userId));
+  const mentorQ = query(collection(db, 'bookings'), where('mentorId', '==', userId));
   
-  return onSnapshot(q, (snap) => {
-    const sessions = snap.docs.map(d => {
-      const data = d.data();
-      return {
-        id: d.id,
-        ...data,
+  const sessionsMap = new Map<string, SessionBooking>();
+  let studentLoaded = false;
+  let mentorLoaded = false;
+  
+  const emit = () => {
+    if (studentLoaded && mentorLoaded) {
+      const arr = Array.from(sessionsMap.values());
+      arr.sort((a, b) => (b.startTime as any).getTime() - (a.startTime as any).getTime());
+      callback(arr);
+    }
+  };
+
+  const processChange = (change: any) => {
+    if (change.type === 'removed') {
+      sessionsMap.delete(change.doc.id);
+    } else {
+      const data = change.doc.data();
+      sessionsMap.set(change.doc.id, {
+        id: change.doc.id, ...data,
         startTime: data.startTime?.toDate() || new Date(),
         endTime: data.endTime?.toDate() || new Date(),
         createdAt: data.createdAt?.toDate() || new Date(),
-      } as SessionBooking;
-    });
-    callback(sessions);
+      } as SessionBooking);
+    }
+  };
+
+  const unsub1 = onSnapshot(studentQ, (snap) => {
+    snap.docChanges().forEach(processChange);
+    studentLoaded = true;
+    emit();
   });
+
+  const unsub2 = onSnapshot(mentorQ, (snap) => {
+    snap.docChanges().forEach(processChange);
+    mentorLoaded = true;
+    emit();
+  });
+
+  return () => {
+    unsub1();
+    unsub2();
+  };
 }

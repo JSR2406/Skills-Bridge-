@@ -130,7 +130,7 @@ export function DiagramViewer({ doubtTitle, doubtContent }: DiagramViewerProps) 
             className="text-[9px] px-1.5 py-0.5 rounded-full font-mono"
             style={{ background: 'rgba(221, 183, 255, 0.1)', color: '#ddb7ff' }}
           >
-            Gemini
+            OpenRouter
           </span>
         </div>
         <div className="flex items-center gap-2">

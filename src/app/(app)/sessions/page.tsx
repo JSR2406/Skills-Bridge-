@@ -112,6 +112,7 @@ export default function MySessionsPage() {
           {sessions.map((session, i) => {
             const start = new Date(session.startTime as Date);
             const isUpcoming = start > new Date();
+            const isMentor = session.mentorId === user?.uid;
             const dateStr = start.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
             const timeStr = `${start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(session.endTime as Date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
 
@@ -146,7 +147,7 @@ export default function MySessionsPage() {
 
                     <div>
                       <h3 className="text-xl sm:text-2xl font-extrabold text-[#dae2fd] tracking-tight mb-3" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                        Session with <span className="text-[#4fdbc8]">{session.mentorName}</span>
+                        Session with <span className="text-[#4fdbc8]">{isMentor ? session.studentName : session.mentorName}</span>
                       </h3>
                       <div className="flex flex-wrap gap-4 items-center pl-1">
                         <div className="flex items-center gap-2 text-[13px] font-bold text-[#8899b8]">
@@ -212,10 +213,31 @@ export default function MySessionsPage() {
                             </div>
                           )}
 
+                          {/* Message Button inside Upcoming */}
+                          <button
+                            onClick={async () => {
+                              const { getOrCreateConversation } = await import('@/features/messages/api');
+                              if (!user || (!session.mentorName && !session.studentName)) return;
+                              const convId = await getOrCreateConversation(
+                                user.uid,
+                                profile?.name || user.displayName || 'Me',
+                                profile?.avatarUrl || '',
+                                isMentor ? session.studentId : session.mentorId,
+                                isMentor ? session.studentName : session.mentorName,
+                                isMentor ? '' : (session.mentorAvatar || '')
+                              );
+                              router.push('/messages');
+                            }}
+                            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[12px] font-bold transition-all hover:bg-[rgba(79,219,200,0.1)] text-[#4fdbc8] border border-[rgba(79,219,200,0.2)]"
+                          >
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> 
+                            Message
+                          </button>
+
                           {/* Copy Link button */}
                           <button
                             onClick={() => handleCopyLink(session)}
-                            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[12px] font-bold transition-all hover:text-[#dae2fd]"
+                            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all hover:text-[#dae2fd]"
                             style={{
                               background: 'rgba(255,255,255,0.03)',
                               border: '1px solid rgba(255,255,255,0.07)',
@@ -229,45 +251,37 @@ export default function MySessionsPage() {
                             )}
                           </button>
 
-                          {/* Direct Jitsi link */}
-                          <a
-                            href={jitsiLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full flex items-center justify-center gap-1.5 text-[11px] font-medium text-[#556780] hover:text-[#8899b8] transition-colors"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                            Open directly in browser
-                          </a>
-
-                          <QuickAddTaskButton
-                            title={`Prep: ${session.mentorName} Session`}
-                            description={`Prepare specific questions and list the doubts I want to discuss with ${session.mentorName}.`}
-                            type="exam-prep"
-                            relatedSessionId={session.id}
-                            buttonText="Schedule Prep"
-                            variant="ghost"
-                            className="w-full text-[12px] text-[#8899b8] hover:text-[#dae2fd] h-8"
-                          />
                         </div>
                       );
                     })() : (
                       <div className="space-y-3">
-                        <Link
-                          href={`/mentors/${session.mentorId}`}
-                          className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-bold text-[#8899b8] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[#dae2fd] transition-colors"
+                        {!isMentor && (
+                          <Link
+                            href={`/mentors/${session.mentorId}`}
+                            className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-bold text-[#8899b8] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[#dae2fd] transition-colors"
+                          >
+                            <User className="w-4 h-4" /> View Mentor <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                          </Link>
+                        )}
+                        <button
+                          onClick={async () => {
+                            const { getOrCreateConversation } = await import('@/features/messages/api');
+                            if (!user || (!session.mentorName && !session.studentName)) return;
+                            const convId = await getOrCreateConversation(
+                              user.uid,
+                              profile?.name || user.displayName || 'Me',
+                              profile?.avatarUrl || '',
+                              isMentor ? session.studentId : session.mentorId,
+                              isMentor ? session.studentName : session.mentorName,
+                              isMentor ? '' : (session.mentorAvatar || '')
+                            );
+                            router.push('/messages');
+                          }}
+                          className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-bold transition-all hover:bg-[rgba(79,219,200,0.1)] text-[#4fdbc8] border border-[rgba(79,219,200,0.2)]"
                         >
-                          <User className="w-4 h-4" /> View Mentor <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                        </Link>
-                        <QuickAddTaskButton
-                          title={`Review notes from ${session.mentorName}`}
-                          description={`Follow up on the advice and resources shared during my 1-on-1 session.`}
-                          type="follow-up"
-                          relatedSessionId={session.id}
-                          buttonText="Schedule Follow-up"
-                          variant="ghost"
-                          className="w-full text-[12px] text-[#8899b8] hover:text-[#dae2fd] h-8"
-                        />
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> 
+                          Message
+                        </button>
                       </div>
                     )}
                   </div>

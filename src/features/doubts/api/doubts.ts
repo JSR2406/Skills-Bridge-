@@ -170,10 +170,10 @@ export async function voteDoubt(doubtId: string, userId: string, voteValue: 1 | 
     import('../../notifications/utils').then(({ sendNotification }) => {
       sendNotification({
         userId: doubtAuthorId,
-        title: 'Someone Upvoted Your Doubt!',
-        message: `Your doubt "${doubtTitle}" received an upvote! +5 pts`,
-        type: 'info',
-        link: `/feed/${doubtId}`,
+        title: 'Doubt Upvoted',
+        body: `Your doubt "${doubtTitle}" received an upvote! +5 pts`,
+        type: 'success',
+        url: `/feed/${doubtId}`,
       }).catch(console.error);
     });
   }
