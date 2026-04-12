@@ -35,8 +35,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 branch: '',
                 semester: 1,
                 subjects: [],
+                bio: '',
+                socialLinks: {},
                 reputation: 0,
+                streakDays: 0,
+                answersCount: 0,
+                acceptedAnswersCount: 0,
+                tasksCompletedCount: 0,
+                testAttemptsCount: 0,
                 badges: ['Pioneer'],
+                mentorApproved: false,
                 createdAt: serverTimestamp() as any,
                 updatedAt: serverTimestamp() as any,
               };
@@ -65,4 +73,3 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
-
