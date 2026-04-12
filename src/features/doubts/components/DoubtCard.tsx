@@ -4,9 +4,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { Doubt } from '../types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowBigUp, ArrowBigDown, MessageCircle, CheckCircle2 } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-
 
 interface DoubtCardProps {
   doubt: Doubt;
@@ -15,6 +14,7 @@ interface DoubtCardProps {
 }
 
 export function DoubtCard({ doubt, onVote, userVote = 0 }: DoubtCardProps) {
+  const router = useRouter();
   const isUpvoted = userVote === 1;
   const isDownvoted = userVote === -1;
 
@@ -92,7 +92,11 @@ export function DoubtCard({ doubt, onVote, userVote = 0 }: DoubtCardProps) {
       <div className="flex-1 min-w-0">
         {/* Meta row */}
         <div className="flex items-center gap-2 mb-2.5">
-          <Link href={`/profile/${doubt.authorId}`} className="flex items-center gap-2 group/author">
+          {/* Use button not Link to avoid <a> nested inside outer <Link> */}
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/profile/${doubt.authorId}`); }}
+            className="flex items-center gap-2 group/author"
+          >
             <Avatar className="w-5 h-5 ring-1 ring-[rgba(79,219,200,0.2)] group-hover/author:ring-[#4fdbc8] transition-all">
               <AvatarImage src={doubt.authorAvatarUrl} alt={doubt.authorName} />
               <AvatarFallback
@@ -103,7 +107,7 @@ export function DoubtCard({ doubt, onVote, userVote = 0 }: DoubtCardProps) {
               </AvatarFallback>
             </Avatar>
             <span className="text-xs font-semibold text-[#dae2fd] group-hover/author:text-[#4fdbc8] transition-colors">{doubt.authorName}</span>
-          </Link>
+          </button>
           <span className="text-[#8899b8]/40 text-xs">·</span>
           <span className="text-xs text-[#8899b8]">{timeAgo}</span>
 
