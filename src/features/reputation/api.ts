@@ -58,18 +58,17 @@ export async function checkAndAwardBadges(userId: string) {
       badges: [...currentBadges, ...newBadges]
     });
     
-    // Also send a notification for each badge
-    newBadges.forEach(badgeId => {
-      const badge = BADGES[badgeId];
-      const notifRef = doc(collection(db, 'notifications'));
-      batch.set(notifRef, {
-        userId,
-        type: 'badge_unlocked',
-        title: 'New Badge Unlocked!',
-        message: `You've earned the "${badge.name}" badge. ${badge.description}`,
-        read: false,
-        linkTo: `/profile/${userId}`,
-        createdAt: serverTimestamp()
+    // Also send a notification for each badge via central utility
+    import('../notifications/utils').then(({ sendNotification }) => {
+      newBadges.forEach(badgeId => {
+        const badge = BADGES[badgeId];
+        sendNotification({
+          userId,
+          type: 'badge_unlocked',
+          title: 'New Badge Unlocked!',
+          message: `You've earned the "${badge.name}" badge. ${badge.description}`,
+          link: `/profile/${userId}`,
+        }).catch(console.error);
       });
     });
 
@@ -146,6 +145,17 @@ export async function processDailyLogin(userId: string) {
         lastActiveDate: serverTimestamp()
       })
       .commit();
+
+    // Notify streak increased
+    import('../notifications/utils').then(({ sendNotification }) => {
+      sendNotification({
+        userId,
+        title: 'Streak Increased! 🔥',
+        message: `You're on a ${(data.streakDays || 0) + 1}-day learning streak!`,
+        type: 'success',
+        link: `/profile/${userId}`,
+      }).catch(console.error);
+    });
   } else if (diffDays > 1) {
     // Streak broken
     await writeBatch(db)
@@ -154,6 +164,19 @@ export async function processDailyLogin(userId: string) {
         lastActiveDate: serverTimestamp()
       })
       .commit();
+
+    // If they previously had a decent streak, notify them it was reset
+    if (data.streakDays > 2) {
+      import('../notifications/utils').then(({ sendNotification }) => {
+        sendNotification({
+          userId,
+          title: 'Welcome Back! 👋',
+          message: `Your streak was reset. Time to start a new learning streak!`,
+          type: 'info',
+          link: `/profile/${userId}`,
+        }).catch(console.error);
+      });
+    }
   } else {
     // Same day, just update last action
     await writeBatch(db)

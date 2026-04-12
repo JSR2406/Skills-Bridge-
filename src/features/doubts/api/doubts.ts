@@ -102,12 +102,14 @@ export async function voteDoubt(doubtId: string, userId: string, voteValue: 1 | 
 
   let shouldAwardPoints = false;
   let doubtAuthorId = '';
+  let doubtTitle = '';
 
   await runTransaction(db, async (transaction) => {
     const doubtDoc = await transaction.get(doubtRef);
     if (!doubtDoc.exists()) throw new Error('Doubt does not exist');
     
     doubtAuthorId = doubtDoc.data().authorId;
+    doubtTitle = doubtDoc.data().title || 'Your doubt';
 
     const voteDoc = await transaction.get(voteRef);
     let currentVoteValue = 0;
@@ -163,6 +165,16 @@ export async function voteDoubt(doubtId: string, userId: string, voteValue: 1 | 
   if (shouldAwardPoints && doubtAuthorId && doubtAuthorId !== userId) {
     import('../../reputation/api').then(({ awardPoints }) => {
       awardPoints(doubtAuthorId, 'doubt_upvoted', `${doubtId}_${userId}`, 'doubt_vote').catch(console.error);
+    });
+    
+    import('../../notifications/utils').then(({ sendNotification }) => {
+      sendNotification({
+        userId: doubtAuthorId,
+        title: 'Someone Upvoted Your Doubt!',
+        message: `Your doubt "${doubtTitle}" received an upvote! +5 pts`,
+        type: 'info',
+        link: `/feed/${doubtId}`,
+      }).catch(console.error);
     });
   }
 }

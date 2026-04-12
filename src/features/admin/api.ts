@@ -22,6 +22,17 @@ export async function updateUserRole(userId: string, targetRole: 'student' | 'me
   const userRef = doc(db, 'users', userId);
   await updateDoc(userRef, { role: targetRole });
 
+  // Notify the user about their role upgrade
+  import('../notifications/utils').then(({ sendNotification }) => {
+    sendNotification({
+      userId,
+      title: 'Role Updated 🎉',
+      message: `Your account role has been upated to ${targetRole}.`,
+      type: 'success',
+      link: `/profile/${userId}`,
+    }).catch(console.error);
+  });
+
   // If upgraded to mentor, ensure they have a basic mentor doc so they show up in searches
   if (targetRole === 'mentor') {
     const mentorRef = doc(db, 'mentors', userId);

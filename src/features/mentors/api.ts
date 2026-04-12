@@ -178,10 +178,35 @@ export async function confirmBookingPayment(
   bookingId: string, 
   razorpayPaymentId: string
 ) {
-  await updateDoc(doc(db, 'bookings', bookingId), {
+  const bookingRef = doc(db, 'bookings', bookingId);
+  await updateDoc(bookingRef, {
     paymentStatus: 'paid',
     razorpayPaymentId,
   });
+
+  const snap = await getDoc(bookingRef);
+  if (snap.exists()) {
+    const data = snap.data();
+    import('../../notifications/utils').then(({ sendNotification }) => {
+      // Notify Mentor
+      sendNotification({
+        userId: data.mentorId,
+        title: 'New Session Booked!',
+        message: `${data.studentName} booked a session with you.`,
+        type: 'success',
+        link: `/sessions`,
+      }).catch(console.error);
+
+      // Notify Student
+      sendNotification({
+        userId: data.studentId,
+        title: 'Booking Confirmed!',
+        message: `Your session with ${data.mentorName} is confirmed.`,
+        type: 'success',
+        link: `/sessions`,
+      }).catch(console.error);
+    });
+  }
 }
 
 export async function getUserSessions(userId: string): Promise<SessionBooking[]> {

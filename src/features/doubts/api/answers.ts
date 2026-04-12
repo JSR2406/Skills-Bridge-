@@ -10,6 +10,7 @@ import {
   serverTimestamp,
   increment,
   Timestamp,
+  getDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { awardPoints } from '../../reputation/api';
@@ -87,12 +88,30 @@ export async function postAnswer(
   });
 
   // Increment responsesCount on the doubt
-  await updateDoc(doc(db, 'doubts', doubtId), {
+  const doubtRef = doc(db, 'doubts', doubtId);
+  await updateDoc(doubtRef, {
     responsesCount: increment(1),
   });
 
   // Award gamification points for posting an answer
   await awardPoints(authorId, 'answer_posted', ref.id, 'answer');
+
+  // Notify the doubt author
+  const doubtSnap = await getDoc(doubtRef);
+  if (doubtSnap.exists()) {
+    const doubtData = doubtSnap.data();
+    if (doubtData.authorId && doubtData.authorId !== authorId) {
+      import('../../notifications/utils').then(({ sendNotification }) => {
+        sendNotification({
+          userId: doubtData.authorId,
+          title: 'New Answer to Your Doubt',
+          message: `${authorName} answered: "${doubtData.title}"`,
+          type: 'info',
+          link: `/feed/${doubtId}`,
+        }).catch(console.error);
+      });
+    }
+  }
 
   return ref.id;
 }
@@ -129,5 +148,15 @@ export async function acceptAnswer(
   // The doubt author triggers the accept, so we award to answer author
   if (answerAuthorId !== doubtAuthorId) {
     await awardPoints(answerAuthorId, 'answer_accepted', answerId, 'answer');
+
+    import('../../notifications/utils').then(({ sendNotification }) => {
+      sendNotification({
+        userId: answerAuthorId,
+        title: 'Your Answer was Accepted! 🎉',
+        message: 'You have been awarded points for your helpful answer.',
+        type: 'success',
+        link: `/feed/${doubtId}`,
+      }).catch(console.error);
+    });
   }
 }
