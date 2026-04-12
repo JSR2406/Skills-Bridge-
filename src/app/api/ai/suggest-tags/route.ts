@@ -42,10 +42,16 @@ Example output: react, javascript, frontend`;
     }
 
     const json = await res.json();
-    const text = json.choices[0].message.content.trim();
+    let text = json.choices[0].message.content.trim();
 
+    // Cleanup if AI returns markdown or sentence
+    if (text.includes('```')) {
+      const match = text.match(/```\s*([\s\S]*?)```/);
+      if (match) text = match[1].trim();
+    }
+    
     const rawTags = text
-      .split(',')
+      .split(/[,|\n]/) // Split by comma or newline
       .map((t: string) => t.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''))
       .filter(Boolean);
     const tags = Array.from(new Set(rawTags)).slice(0, 5);

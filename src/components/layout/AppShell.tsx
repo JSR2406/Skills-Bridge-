@@ -11,7 +11,7 @@ import { BadgeManager } from '@/features/reputation/components/BadgeManager';
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isCallPage = pathname.startsWith('/call/');
+  const isCallPage = pathname === '/call' || pathname.startsWith('/call/');
 
   // Call page gets full viewport — no sidebar, header, or padding
   if (isCallPage) {

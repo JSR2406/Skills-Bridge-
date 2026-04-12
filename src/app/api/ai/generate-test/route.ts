@@ -63,16 +63,27 @@ Return STIRCTLY a valid JSON object:
     const json = await res.json();
     let text = json.choices[0].message.content.trim();
 
-    // Cleanup AI output just in case
-    if (text.startsWith('\`\`\`json')) {
-      text = text.substring(7, text.length - 3).trim();
-    } else if (text.startsWith('\`\`\`')) {
-      text = text.substring(3, text.length - 3).trim();
+    // Safety check for markdown code blocks and stray text
+    if (text.includes('```')) {
+      const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (match) text = match[1].trim();
+    }
+    
+    // Final cleanup of any potential stray characters before/after JSON
+    const startIdx = text.indexOf('{');
+    const endIdx = text.lastIndexOf('}');
+    if (startIdx !== -1 && endIdx !== -1) {
+      text = text.substring(startIdx, endIdx + 1);
     }
 
-    const parsed = JSON.parse(text);
+    try {
+      const parsed = JSON.parse(text);
+      return NextResponse.json({ questions: parsed.questions || parsed });
+    } catch (e) {
+      console.error('Failed to parse AI Test JSON:', text);
+      throw new Error('AI response was not valid JSON');
+    }
 
-    return NextResponse.json({ questions: parsed.questions || parsed });
   } catch (error: any) {
     console.error('OpenRouter Test Generation Error:', error);
     return NextResponse.json(

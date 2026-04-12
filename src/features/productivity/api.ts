@@ -21,14 +21,14 @@ const AI_LOGS_COLLECTION = 'aiProductivityLogs';
 
 // Tasks CRUD
 export async function fetchTasks(userId: string): Promise<Task[]> {
+  // Simple query — just filter by userId (no orderBy to avoid composite index requirement)
   const q = query(
     collection(db, TASKS_COLLECTION),
-    where('userId', '==', userId),
-    orderBy('dueDateTime', 'asc')
+    where('userId', '==', userId)
   );
   
   const snap = await getDocs(q);
-  return snap.docs.map(d => {
+  const tasks = snap.docs.map(d => {
     const data = d.data();
     const convertDate = (val: any) => {
       if (!val) return new Date();
@@ -45,11 +45,25 @@ export async function fetchTasks(userId: string): Promise<Task[]> {
       updatedAt: convertDate(data.updatedAt),
     };
   }) as Task[];
+
+  // Sort client-side: pending first, then by dueDateTime ascending
+  return tasks.sort((a, b) => {
+    // Done tasks go to the bottom
+    if (a.status === 'done' && b.status !== 'done') return 1;
+    if (a.status !== 'done' && b.status === 'done') return -1;
+    return (a.dueDateTime as Date).getTime() - (b.dueDateTime as Date).getTime();
+  });
 }
 
 export async function createTask(data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  // Ensure dueDateTime is a proper Date (not a raw string from datetime-local input)
+  const dueDateTime = data.dueDateTime instanceof Date
+    ? data.dueDateTime
+    : new Date(data.dueDateTime as any);
+
   const docRef = await addDoc(collection(db, TASKS_COLLECTION), {
     ...data,
+    dueDateTime,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -159,20 +173,21 @@ export async function getProductivityContext(userId: string) {
     };
   });
 
-  // Fetch existing tasks
+  // Fetch existing tasks (filter status client-side to avoid inequality index)
   const tasksQ = query(
     collection(db, TASKS_COLLECTION),
     where('userId', '==', userId),
-    where('status', '!=', 'done'),
     limit(20)
   );
   const tasksSnap = await getDocs(tasksQ);
-  const existingTasks = tasksSnap.docs.map(d => ({
-    id: d.id,
-    title: d.data().title,
-    type: d.data().type,
-    status: d.data().status
-  }));
+  const existingTasks = tasksSnap.docs
+    .filter(d => d.data().status !== 'done')
+    .map(d => ({
+      id: d.id,
+      title: d.data().title,
+      type: d.data().type,
+      status: d.data().status
+    }));
 
   return {
     userProfile,

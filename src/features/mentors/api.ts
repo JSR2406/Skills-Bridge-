@@ -156,8 +156,8 @@ export async function createSessionBooking(
     amount: slot.fee,
     paymentStatus: 'pending',
     razorpayOrderId,
-    bookingStatus: 'confirmed', // Technically pending payment completion, but simplifying logic for sandbox
-    meetingLink: slot.meetingLink || `https://meet.jit.si/skillbridge_${slot.id}`,
+    bookingStatus: 'confirmed',
+    meetingLink: `/call?session=${slot.id}`,   // in-app call page
     startTime: slot.startTime,
     endTime: slot.endTime,
     createdAt: serverTimestamp() as any,

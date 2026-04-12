@@ -9,38 +9,55 @@ export interface Badge {
 
 export const BADGES: Badge[] = [
   {
-    id: 'novice_solver',
-    name: 'Novice Solver',
-    description: 'Solve your first doubt with AI assistance.',
-    icon: '🎯',
-    threshold: 1,
+    id: 'novice',
+    name: 'Novice',
+    description: 'Earned 10 reputation points',
+    icon: '⭐',
+    threshold: 10,
+    type: 'reputation',
+  },
+  {
+    id: 'helper',
+    name: 'Helper',
+    description: 'Posted 5 answers to community doubts',
+    icon: '💬',
+    threshold: 5,
     type: 'doubts',
   },
   {
     id: 'scholar',
     name: 'Scholar',
-    description: 'Reach 100 reputation points.',
+    description: 'Completed 5 practice tests',
     icon: '📚',
-    threshold: 100,
-    type: 'reputation',
-  },
-  {
-    id: 'productivity_pro',
-    name: 'Productivity Pro',
-    description: 'Complete 10 study tasks.',
-    icon: '⚡',
-    threshold: 10,
-    type: 'productivity',
-  },
-  {
-    id: 'test_master',
-    name: 'Test Master',
-    description: 'Complete 5 practice tests with >90% score.',
-    icon: '🏆',
     threshold: 5,
     type: 'tests',
   },
+  {
+    id: 'expert',
+    name: 'Expert',
+    description: '10 answers accepted by peers',
+    icon: '✅',
+    threshold: 10,
+    type: 'doubts',
+  },
+  {
+    id: 'master',
+    name: 'Master',
+    description: 'Reached 500 total reputation',
+    icon: '👑',
+    threshold: 500,
+    type: 'reputation',
+  },
+  {
+    id: 'streak_7',
+    name: '7-Day Streak',
+    description: 'Maintained a 7-day learning streak',
+    icon: '🔥',
+    threshold: 7,
+    type: 'reputation',
+  },
 ];
+
 
 export function getBadgesForStats(stats: { 
   reputation: number, 

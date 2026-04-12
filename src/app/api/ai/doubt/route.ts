@@ -57,21 +57,26 @@ Request JSON Structure:
     const json = await res.json();
     let responseText = json.choices[0].message.content.trim();
     
-    // Safety check for markdown code blocks
-    if (responseText.startsWith('```json')) {
-      responseText = responseText.replace(/```json|```/g, '').trim();
+    // Safety check for markdown code blocks and stray text
+    if (responseText.includes('```')) {
+      const match = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (match) responseText = match[1].trim();
     }
+    
+    // Final cleanup of any potential stray characters before/after JSON
+    responseText = responseText.substring(responseText.indexOf('{'), responseText.lastIndexOf('}') + 1);
 
     try {
       const parsedData = JSON.parse(responseText);
       return NextResponse.json(parsedData);
     } catch (e) {
       console.error('Failed to parse AI JSON:', responseText);
+      // Fallback response instead of crashing
       return NextResponse.json({ 
         restatedQuestion: title,
-        steps: [responseText],
-        commonMistakes: [],
-        summaryNotes: "AI response parsing failed. Raw response provided.",
+        steps: [responseText || "AI was unable to format its response correctly. Please try again with a more detailed question."],
+        commonMistakes: ["The description might be too vague or the AI is experiencing high load."],
+        summaryNotes: "Parsing error occurred. Displaying raw output if available.",
         titleSuggestion: title,
         tagSuggestions: []
       });

@@ -5,7 +5,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { BookOpenCheck } from 'lucide-react';
-import { processDailyLogin } from '@/features/reputation/api';
+
 
 function LoadingScreen({ message }: { message: string }) {
   return (
@@ -78,7 +78,7 @@ function LoadingScreen({ message }: { message: string }) {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, profile, isAuthenticated, loading } = useAuth();
+  const { user, profile, isAuthenticated, isProfileComplete, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -86,20 +86,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (!loading) {
       if (!isAuthenticated) {
         router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
-      } else if (isAuthenticated && !profile && pathname !== '/onboarding') {
+      } else if (isAuthenticated && profile && !isProfileComplete && pathname !== '/onboarding') {
         router.replace('/onboarding');
-      } else if (isAuthenticated && profile && user) {
-        if (!sessionStorage.getItem('dailyLoginChecked')) {
-          sessionStorage.setItem('dailyLoginChecked', 'true');
-          processDailyLogin(user.uid).catch(console.error);
+      } else if (isAuthenticated && profile && user && isProfileComplete) {
+        // Daily Login & Streak Processing
+        if (user.uid && !(window as any).dailyLoginProcessed) {
+          (window as any).dailyLoginProcessed = true;
+          import('@/features/reputation/api').then(({ processDailyLogin }) => {
+            processDailyLogin(user.uid);
+          });
         }
       }
     }
-  }, [isAuthenticated, profile, loading, router, pathname, user]);
+  }, [isAuthenticated, profile, isProfileComplete, loading, router, pathname, user]);
 
   if (loading) return <LoadingScreen message="Loading SkillBridge..." />;
 
-  if (!isAuthenticated || (!profile && pathname !== '/onboarding')) {
+  if (!isAuthenticated || (profile && !isProfileComplete && pathname !== '/onboarding')) {
     return <LoadingScreen message="Redirecting..." />;
   }
 

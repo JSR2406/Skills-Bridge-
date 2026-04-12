@@ -6,8 +6,10 @@ export function useAuth() {
   const loading = useAuthStore((state) => state.loading);
   const error = useAuthStore((state) => state.error);
 
+  const setProfile = useAuthStore((state) => state.setProfile);
+
   const isAuthenticated = !!user;
-  const isProfileComplete = !!profile;
+  const isProfileComplete = !!profile && !!profile.college;
 
   return {
     user,
@@ -16,5 +18,6 @@ export function useAuth() {
     error,
     isAuthenticated,
     isProfileComplete,
+    setProfile,
   };
 }

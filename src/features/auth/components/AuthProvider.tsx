@@ -24,10 +24,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (userDocSnap.exists()) {
               setProfile(userDocSnap.data() as UserProfile);
             } else {
-              setProfile(null); // Will trigger onboarding if no profile exists
+              // Auto-initialize profile for new OAuth users
+              const newProfile: UserProfile = {
+                uid: firebaseUser.uid,
+                name: firebaseUser.displayName || 'Anonymous Student',
+                email: firebaseUser.email || '',
+                avatarUrl: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
+                role: 'student',
+                college: '',
+                branch: '',
+                semester: 1,
+                subjects: [],
+                reputation: 0,
+                badges: ['Pioneer'],
+                createdAt: serverTimestamp() as any,
+                updatedAt: serverTimestamp() as any,
+              };
+              await setDoc(userDocRef, newProfile);
+              setProfile(newProfile);
             }
           } catch (err) {
-            console.error('Error fetching user profile:', err);
+            console.error('Error fetching/creating user profile:', err);
             setError(err as Error);
           }
         } else {

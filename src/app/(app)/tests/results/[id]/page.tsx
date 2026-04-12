@@ -7,7 +7,7 @@ import { PracticeTest, TestAttempt } from '@/features/tests/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
-import { CheckCircle2, XCircle, Clock, Trophy, ChevronRight, BarChart3, RotateCcw } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, Trophy, ChevronRight, BarChart3, RotateCcw, Sparkles, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { QuickAddTaskButton } from '@/features/productivity/components/QuickAddTaskButton';
 
@@ -75,79 +75,106 @@ export default function TestResultPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-1 bg-surface-card border-border overflow-hidden relative">
-          <div className={`absolute top-0 left-0 w-full h-2 ${isGood ? 'bg-green-500' : 'bg-yellow-500'}`}/>
+        <Card className="md:col-span-1 bg-surface-card border-border overflow-hidden relative group">
+          <div className={`absolute top-0 left-0 w-full h-2 ${isGood ? 'bg-[#4fdbc8]' : 'bg-[#ffb84d]'}`}/>
+          
+          {/* Points Payout Floating Badge */}
+          <div className="absolute top-6 right-6 animate-bounce-slow">
+            <div className="bg-[#4fdbc8]/10 border border-[#4fdbc8]/30 px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_0_20px_rgba(79,219,200,0.1)]">
+              <Sparkles className="w-4 h-4 text-[#4fdbc8]" />
+              <span className="text-sm font-black text-[#4fdbc8]">+15 Pts</span>
+            </div>
+          </div>
+
           <CardContent className="p-8 flex flex-col items-center justify-center text-center space-y-4">
-            <div className={`w-24 h-24 rounded-full flex items-center justify-center ${isGood ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'}`}>
+            <div className={`w-24 h-24 rounded-3xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6 ${isGood ? 'bg-[#4fdbc8]/10 text-[#4fdbc8] border border-[#4fdbc8]/20' : 'bg-[#ffb84d]/10 text-[#ffb84d] border border-[#ffb84d]/20'}`}>
               <Trophy className="w-10 h-10" />
             </div>
             <div>
-              <div className="text-5xl font-black">{percentage}%</div>
-              <p className="text-sm font-medium text-muted-foreground mt-2">{attempt.score} out of {attempt.totalQuestions} correct</p>
+              <div className="text-6xl font-black tracking-tighter text-[#dae2fd]">{percentage}<span className="text-2xl text-[#8899b8] ml-1">%</span></div>
+              <p className="text-[10px] font-black text-[#8899b8] uppercase tracking-widest mt-2">{attempt.score} out of {attempt.totalQuestions} correct</p>
             </div>
-            <div className="w-full pt-4 mt-2 border-t border-border/50 text-sm flex justify-between">
-              <span className="text-muted-foreground flex items-center"><Clock className="w-4 h-4 mr-1"/> Time taken</span>
-              <span className="font-semibold">{timeStr}</span>
+            <div className="w-full pt-6 mt-4 border-t border-[rgba(255,255,255,0.05)] text-xs flex justify-between">
+              <span className="text-[#8899b8] font-bold uppercase tracking-wider flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-[#4fdbc8]"/> Efficiency</span>
+              <span className="font-extrabold text-[#dae2fd]">{timeStr}</span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="md:col-span-2 bg-surface-card border-border">
-          <CardHeader className="border-b border-border/50 bg-surface-elevated/30">
-            <CardTitle className="text-lg">Detailed Review</CardTitle>
-            <CardDescription>Review your answers and read explanations.</CardDescription>
+          <CardHeader className="border-b border-[rgba(255,255,255,0.05)] bg-[rgba(15,23,37,0.3)]">
+            <div className="flex items-center gap-2 mb-1">
+               <BarChart3 className="w-4 h-4 text-[#ddb7ff]" />
+               <CardTitle className="text-lg text-[#dae2fd]">Performance Analysis</CardTitle>
+            </div>
+            <CardDescription className="text-[#8899b8] text-xs">Review individual responses and AI-generated reasonings.</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="divide-y divide-border/50">
+            <div className="divide-y divide-[rgba(255,255,255,0.05)]">
               {test.questions.map((q, idx) => {
                 const userAns = attempt.answers[idx];
                 const isCorrect = userAns === q.correctIndex;
                 const isUnanswered = userAns === undefined;
 
                 return (
-                  <div key={idx} className="p-6 space-y-4 hover:bg-surface-elevated/20 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div className="mt-0.5 flex-shrink-0">
-                        {isCorrect ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-destructive" />}
+                  <div key={idx} className="p-6 space-y-5 hover:bg-[rgba(255,255,255,0.02)] transition-colors relative group">
+                    <div className="flex items-start gap-4">
+                      <div className={`mt-1 flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center border ${isCorrect ? 'bg-[#4fdbc8]/10 text-[#4fdbc8] border-[#4fdbc8]/20' : 'bg-[#ff6b6b]/10 text-[#ff6b6b] border-[#ff6b6b]/20'}`}>
+                        {isCorrect ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
                       </div>
-                      <div>
-                        <h4 className="text-base font-semibold leading-relaxed text-foreground">
-                          {idx + 1}. {q.text}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                           <span className="text-[10px] font-black text-[#8899b8] uppercase tracking-[0.2em]">Question {idx + 1}</span>
+                           <span className="px-2 py-0.5 rounded-md bg-[rgba(221,183,255,0.05)] border border-[rgba(221,183,255,0.1)] text-[#ddb7ff] text-[9px] font-bold uppercase tracking-wider">{q.category}</span>
+                        </div>
+                        <h4 className="text-base font-bold leading-relaxed text-[#dae2fd] mb-5">
+                          {q.text}
                         </h4>
                         
-                        <div className="mt-4 space-y-2">
-                          {q.options.map((opt, optIdx) => {
-                            const isUserAns = userAns === optIdx;
-                            const isActualCorrect = q.correctIndex === optIdx;
-                            let style = "border-border text-muted-foreground bg-surface";
-                            let prefix = "";
+                        <div className="grid sm:grid-cols-2 gap-3">
+                           {q.options.map((opt, optIdx) => {
+                             const isUserAns = userAns === optIdx;
+                             const isActualCorrect = q.correctIndex === optIdx;
+                             
+                             let borderColor = "rgba(255,255,255,0.08)";
+                             let bgColor = "rgba(19, 27, 46, 0.4)";
+                             let textColor = "#8899b8";
 
-                            if (isActualCorrect) {
-                              style = "border-green-500/50 bg-green-500/10 text-green-600 dark:text-green-400";
-                              prefix = "✓ ";
-                            } else if (isUserAns && !isCorrect) {
-                              style = "border-destructive/50 bg-destructive/10 text-destructive";
-                              prefix = "✗ ";
-                            }
+                             if (isActualCorrect) {
+                               borderColor = "rgba(79, 219, 200, 0.3)";
+                               bgColor = "rgba(79, 219, 200, 0.05)";
+                               textColor = "#4fdbc8";
+                             } else if (isUserAns && !isCorrect) {
+                               borderColor = "rgba(255, 107, 107, 0.3)";
+                               bgColor = "rgba(255, 107, 107, 0.05)";
+                               textColor = "#ff6b6b";
+                             }
 
-                            return (
-                              <div key={optIdx} className={`p-3 rounded-lg border text-sm ${style}`}>
-                                <span className="font-medium mr-2">{['A','B','C','D'][optIdx]}.</span>
-                                {prefix}{opt}
-                              </div>
-                            )
-                          })}
+                             return (
+                               <div key={optIdx} className="p-4 rounded-xl border text-sm transition-all flex items-start gap-3" style={{ borderColor, backgroundColor: bgColor }}>
+                                 <span className="font-black text-[11px] mt-0.5 opacity-40" style={{ color: textColor }}>{['A','B','C','D'][optIdx]}</span>
+                                 <span className="font-medium leading-snug flex-1" style={{ color: textColor }}>{opt}</span>
+                                 {isActualCorrect && <CheckCircle2 className="w-4 h-4 text-[#4fdbc8] shrink-0" />}
+                                 {isUserAns && !isCorrect && <XCircle className="w-4 h-4 text-[#ff6b6b] shrink-0" />}
+                               </div>
+                             )
+                           })}
                         </div>
                         
                         {isUnanswered && (
-                          <div className="mt-3 text-sm text-yellow-500 font-medium">
-                            You didn't answer this question.
+                          <div className="mt-4 flex items-center gap-2 p-3 rounded-xl bg-[#ffb84d]/5 border border-[#ffb84d]/10 text-[#ffb84d] text-[11px] font-bold uppercase tracking-wider">
+                            <Clock className="w-3.5 h-3.5" /> Item was skipped during assessment
                           </div>
                         )}
 
-                        <div className="mt-4 p-4 rounded-lg bg-brand-500/5 border border-brand-500/20">
-                          <p className="text-xs font-semibold text-brand-500 uppercase tracking-wider mb-1">Explanation</p>
-                          <p className="text-sm text-brand-100">{q.explanation}</p>
+                        <div className="mt-6 p-5 rounded-2xl bg-gradient-to-br from-[rgba(15,23,37,0.8)] to-[rgba(10,14,24,0.8)] border border-[rgba(221,183,255,0.1)] relative overflow-hidden">
+                          <div className="absolute top-0 right-0 p-3 opacity-10">
+                             <Zap className="w-12 h-12 text-[#ddb7ff]" />
+                          </div>
+                          <p className="text-[10px] font-black text-[#ddb7ff] uppercase tracking-widest mb-2 flex items-center gap-2">
+                             <Sparkles className="w-3.5 h-3.5" /> AI Learning Insight
+                          </p>
+                          <p className="text-sm text-[#dae2fd] leading-relaxed relative z-10">{q.explanation}</p>
                         </div>
                       </div>
                     </div>

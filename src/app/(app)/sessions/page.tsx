@@ -1,18 +1,42 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { subscribeToUserSessions } from '@/features/mentors/api';
 import { SessionBooking } from '@/features/mentors/types';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
-import { Calendar, Clock, Video, CheckCircle2, User, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, Video, CheckCircle2, User, ChevronRight, Copy, Check, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { QuickAddTaskButton } from '@/features/productivity/components/QuickAddTaskButton';
+import { toast } from 'sonner';
+
+/** Returns true if session starts within 15 min from now OR is currently running */
+function isCallJoinable(startTime: Date, endTime: Date): boolean {
+  const now = Date.now();
+  const start = startTime.getTime();
+  const end = endTime.getTime();
+  const fifteenMin = 15 * 60 * 1000;
+  return now >= start - fifteenMin && now <= end;
+}
+
+/** Build the in-app call URL */
+function buildCallUrl(session: SessionBooking, displayName: string): string {
+  const base = typeof window !== 'undefined' ? window.location.origin : '';
+  return `${base}/call?session=${session.id}&name=${encodeURIComponent(displayName)}`;
+}
+
+/** Build the public Jitsi direct link */  
+function buildJitsiLink(sessionId: string): string {
+  return `https://meet.jit.si/skillsbridge-${sessionId}`;
+}
 
 export default function MySessionsPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const router = useRouter();
   const [sessions, setSessions] = useState<SessionBooking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -23,6 +47,24 @@ export default function MySessionsPage() {
     });
     return () => unsubscribe();
   }, [user]);
+
+  const handleCopyLink = useCallback(async (session: SessionBooking) => {
+    const link = buildJitsiLink(session.id);
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedId(session.id);
+      toast.success('Meeting link copied!');
+      setTimeout(() => setCopiedId(null), 2500);
+    } catch {
+      toast.error('Could not copy — link: ' + link);
+    }
+  }, []);
+
+  const handleJoinCall = useCallback((session: SessionBooking) => {
+    const name = profile?.name || user?.displayName || 'Student';
+    const url = `/call?session=${session.id}&name=${encodeURIComponent(name)}`;
+    router.push(url);
+  }, [profile, user, router]);
 
   if (isLoading) return <div className="max-w-4xl mx-auto mt-10"><LoadingSkeleton /></div>;
 
@@ -123,37 +165,101 @@ export default function MySessionsPage() {
                     </div>
                   </div>
 
-                  <div className="shrink-0 md:min-w-[200px]">
-                    {isUpcoming ? (
-                      <div className="bg-[rgba(15,23,37,0.7)] border border-[rgba(79,219,200,0.1)] p-4 rounded-xl flex flex-col items-center justify-center text-center space-y-3">
-                        <span className="text-[10px] text-[#ddb7ff] font-bold uppercase tracking-widest block">Meeting Details</span>
-                        <a 
-                          href={session.meetingLink} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="w-full btn-gradient py-2.5 rounded-lg text-[13px] font-bold shadow-[0_0_15px_rgba(79,219,200,0.15)] flex items-center justify-center gap-2"
+                  <div className="shrink-0 md:min-w-[220px]">
+                    {isUpcoming ? (() => {
+                      const start = new Date(session.startTime as Date);
+                      const end = new Date(session.endTime as Date);
+                      const joinable = isCallJoinable(start, end);
+                      const jitsiLink = buildJitsiLink(session.id);
+                      const isCopied = copiedId === session.id;
+
+                      return (
+                        <div
+                          className="rounded-xl flex flex-col items-center text-center space-y-3 p-4"
+                          style={{
+                            background: 'rgba(15,23,37,0.7)',
+                            border: joinable
+                              ? '1px solid rgba(79,219,200,0.3)'
+                              : '1px solid rgba(79,219,200,0.1)',
+                            boxShadow: joinable ? '0 0 20px rgba(79,219,200,0.08)' : 'none',
+                          }}
                         >
-                          <Video className="w-4 h-4" /> Join Call
-                        </a>
-                        <QuickAddTaskButton 
-                          title={`Prep: ${session.mentorName} Session`}
-                          description={`Prepare specific questions and list the doubts I want to discuss with ${session.mentorName}.`}
-                          type="exam-prep"
-                          relatedSessionId={session.id}
-                          buttonText="Schedule Prep"
-                          variant="ghost"
-                          className="w-full text-[12px] text-[#8899b8] hover:text-[#dae2fd] h-8"
-                        />
-                      </div>
-                    ) : (
+                          <span className="text-[10px] text-[#ddb7ff] font-bold uppercase tracking-widest block">
+                            Meeting Details
+                          </span>
+
+                          {/* Join Call button — active 15 min before */}
+                          {joinable ? (
+                            <button
+                              onClick={() => handleJoinCall(session)}
+                              className="w-full btn-gradient py-2.5 rounded-lg text-[13px] font-bold shadow-[0_0_15px_rgba(79,219,200,0.25)] flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-transform"
+                            >
+                              <Video className="w-4 h-4" /> Join Call
+                            </button>
+                          ) : (
+                            <div className="w-full text-center">
+                              <button
+                                disabled
+                                className="w-full py-2.5 rounded-lg text-[13px] font-bold flex items-center justify-center gap-2 opacity-40 cursor-not-allowed"
+                                style={{ background: 'rgba(79,219,200,0.08)', border: '1px solid rgba(79,219,200,0.1)', color: '#4fdbc8' }}
+                                title="Available 15 minutes before session starts"
+                              >
+                                <Video className="w-4 h-4" /> Join Call
+                              </button>
+                              <p className="text-[10px] text-[#556780] mt-1.5">
+                                Opens 15 min before session
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Copy Link button */}
+                          <button
+                            onClick={() => handleCopyLink(session)}
+                            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[12px] font-bold transition-all hover:text-[#dae2fd]"
+                            style={{
+                              background: 'rgba(255,255,255,0.03)',
+                              border: '1px solid rgba(255,255,255,0.07)',
+                              color: isCopied ? '#4fdbc8' : '#8899b8',
+                            }}
+                          >
+                            {isCopied ? (
+                              <><Check className="w-3.5 h-3.5" /> Copied!</>
+                            ) : (
+                              <><Copy className="w-3.5 h-3.5" /> Copy Meeting Link</>
+                            )}
+                          </button>
+
+                          {/* Direct Jitsi link */}
+                          <a
+                            href={jitsiLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full flex items-center justify-center gap-1.5 text-[11px] font-medium text-[#556780] hover:text-[#8899b8] transition-colors"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            Open directly in browser
+                          </a>
+
+                          <QuickAddTaskButton
+                            title={`Prep: ${session.mentorName} Session`}
+                            description={`Prepare specific questions and list the doubts I want to discuss with ${session.mentorName}.`}
+                            type="exam-prep"
+                            relatedSessionId={session.id}
+                            buttonText="Schedule Prep"
+                            variant="ghost"
+                            className="w-full text-[12px] text-[#8899b8] hover:text-[#dae2fd] h-8"
+                          />
+                        </div>
+                      );
+                    })() : (
                       <div className="space-y-3">
-                        <Link 
+                        <Link
                           href={`/mentors/${session.mentorId}`}
                           className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-bold text-[#8899b8] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[#dae2fd] transition-colors"
                         >
                           <User className="w-4 h-4" /> View Mentor <ChevronRight className="w-3.5 h-3.5 ml-1" />
                         </Link>
-                        <QuickAddTaskButton 
+                        <QuickAddTaskButton
                           title={`Review notes from ${session.mentorName}`}
                           description={`Follow up on the advice and resources shared during my 1-on-1 session.`}
                           type="follow-up"

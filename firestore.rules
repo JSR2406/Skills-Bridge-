@@ -15,10 +15,11 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Anyone can view profiles
+      // Anyone can view profiles, but only the owner can edit
       allow read: if true;
-      allow write: if isAuth(); 
+      allow write: if isOwner(userId); 
     }
+
 
     match /doubts/{doubtId} {
       allow read: if true;
@@ -60,35 +61,42 @@ service cloud.firestore {
       allow write: if isAuth() && request.resource.data.userId == request.auth.uid;
     }
 
+    // Mentorship
     match /mentors/{mentorId} {
       allow read: if isAuth();
-      allow write: if isAuth();
+      allow write: if isOwner(mentorId) || isAdmin();
     }
 
     match /mentorSlots/{slotId} {
       allow read: if isAuth();
-      allow write: if isAuth();
+      allow write: if isAuth() && (
+        (request.method == 'create' && request.resource.data.mentorId == request.auth.uid) ||
+        (request.method == 'update' && resource.data.mentorId == request.auth.uid) ||
+        (request.method == 'update' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isBooked'])) // Allow students to book
+      );
     }
 
     match /bookings/{bookingId} {
-      allow read: if isAuth();
-      allow write: if isAuth();
+      allow read: if isAuth() && (resource.data.studentId == request.auth.uid || resource.data.mentorId == request.auth.uid);
+      allow create: if isAuth() && request.resource.data.studentId == request.auth.uid;
+      allow update: if isAuth() && (resource.data.studentId == request.auth.uid || resource.data.mentorId == request.auth.uid);
     }
 
+    // Real-time Chat
     match /conversations/{conversationId} {
-      allow read: if isAuth(); 
-      allow write: if isAuth();
+      allow read, write: if isAuth() && request.auth.uid in resource.data.participants;
+      allow create: if isAuth();
     }
     
     match /conversations/{conversationId}/messages/{messageId} {
-      allow read: if isAuth();
-      allow write: if isAuth();
+      allow read: if isAuth() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+      allow create: if isAuth() && request.resource.data.senderId == request.auth.uid;
     }
 
+    // Productivity
     match /tasks/{taskId} {
-      // Users can only manage their own tasks
       allow read, write: if isAuth() && (
-        (resource == null && request.resource.data.userId == request.auth.uid) || 
+        (request.method == 'create' && request.resource.data.userId == request.auth.uid) || 
         (resource != null && resource.data.userId == request.auth.uid)
       );
     }
@@ -97,5 +105,12 @@ service cloud.firestore {
       allow read: if isAuth() && resource.data.userId == request.auth.uid;
       allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
     }
+
+    // Reputation - Keep accessible for client side payout but restrict to owners
+    match /reputationEvents/{eventId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+    }
   }
 }
+

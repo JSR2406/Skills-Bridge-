@@ -273,20 +273,30 @@ export default function AskPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-4 pt-6">
+            <div className="flex flex-col items-center gap-4 pt-6">
+              <div className="flex justify-end gap-4 w-full">
+                <button 
+                  onClick={() => router.back()} 
+                  className="px-6 py-3 rounded-xl text-sm font-bold text-[#8899b8] hover:text-[#dae2fd] transition-colors"
+                >
+                  Go Back
+                </button>
+                <button 
+                  onClick={handleAskAI} 
+                  disabled={isAskingAI || isSubmitting}
+                  className="flex items-center px-10 py-3.5 rounded-2xl text-sm font-black bg-gradient-to-r from-[#4fdbc8] to-[#ddb7ff] text-[#0b1326] transition-all hover:shadow-[0_0_30px_rgba(79,219,200,0.3)] disabled:opacity-50 hover:scale-[1.02] active:scale-95 uppercase tracking-tight"
+                >
+                  {isAskingAI ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Bot className="w-5 h-5 mr-2" />}
+                  Analyze with Smart AI
+                </button>
+              </div>
+              
               <button 
-                onClick={() => router.back()} 
-                className="px-6 py-3 rounded-xl text-sm font-bold text-[#8899b8] hover:text-[#dae2fd] transition-colors"
+                onClick={() => setStep('community')}
+                className="text-[11px] font-black uppercase tracking-widest text-[#8899b8] hover:text-[#4fdbc8] transition-colors flex items-center gap-2 group"
               >
-                Go Back
-              </button>
-              <button 
-                onClick={handleAskAI} 
-                disabled={isAskingAI || isSubmitting}
-                className="flex items-center px-10 py-3.5 rounded-2xl text-sm font-black bg-gradient-to-r from-[#4fdbc8] to-[#ddb7ff] text-[#0b1326] transition-all hover:shadow-[0_0_30px_rgba(79,219,200,0.3)] disabled:opacity-50 hover:scale-[1.02] active:scale-95 uppercase tracking-tight"
-              >
-                {isAskingAI ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Bot className="w-5 h-5 mr-2" />}
-                Analyze with Smart AI
+                Skip AI Check & Post to Community
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
 

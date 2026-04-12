@@ -6,7 +6,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { getUserAttempts, saveGeneratedTest, getAvailableTests } from '@/features/tests/api';
 import { TestAttempt, PracticeTest } from '@/features/tests/types';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
-import { BrainCircuit, BookCheck, Clock, Loader2, Sparkles, TrendingUp, X } from 'lucide-react';
+import { BrainCircuit, BookCheck, Clock, Loader2, Sparkles, TrendingUp, X, Trophy, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function PracticeTestsPage() {
@@ -220,7 +220,46 @@ export default function PracticeTestsPage() {
         </div>
       )}
 
-      {/* ── Available Practice Tests ── */}
+      {/* ── Stats Overview ── */}
+      {!isLoadingHistory && history.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in slide-in-from-bottom-4 duration-500">
+          <div className="glass-card p-4 flex flex-col items-center justify-center text-center space-y-1">
+            <div className="w-10 h-10 rounded-full bg-[rgba(79,219,200,0.1)] flex items-center justify-center mb-1">
+              <Trophy className="w-5 h-5 text-[#4fdbc8]" />
+            </div>
+            <div className="text-2xl font-black text-[#dae2fd]">{history.length}</div>
+            <div className="text-[10px] font-bold text-[#8899b8] uppercase tracking-wider">Tests Taken</div>
+          </div>
+          <div className="glass-card p-4 flex flex-col items-center justify-center text-center space-y-1">
+            <div className="w-10 h-10 rounded-full bg-[rgba(221,183,255,0.1)] flex items-center justify-center mb-1">
+              <Sparkles className="w-5 h-5 text-[#ddb7ff]" />
+            </div>
+            <div className="text-2xl font-black text-[#dae2fd]">
+              {Math.round(history.reduce((acc, h) => acc + (h.score / h.totalQuestions) * 100, 0) / history.length)}%
+            </div>
+            <div className="text-[10px] font-bold text-[#8899b8] uppercase tracking-wider">Avg. Score</div>
+          </div>
+          <div className="glass-card p-4 flex flex-col items-center justify-center text-center space-y-1">
+            <div className="w-10 h-10 rounded-full bg-[rgba(79,219,200,0.1)] flex items-center justify-center mb-1">
+              <CheckCircle2 className="w-5 h-5 text-[#4fdbc8]" />
+            </div>
+            <div className="text-2xl font-black text-[#dae2fd]">
+              {history.reduce((acc, h) => acc + h.score, 0)}
+            </div>
+            <div className="text-[10px] font-bold text-[#8899b8] uppercase tracking-wider">Correct Answers</div>
+          </div>
+          <div className="glass-card p-4 flex flex-col items-center justify-center text-center space-y-1">
+            <div className="w-10 h-10 rounded-full bg-[rgba(221,183,255,0.1)] flex items-center justify-center mb-1">
+              <TrendingUp className="w-5 h-5 text-[#ddb7ff]" />
+            </div>
+            <div className="text-2xl font-black text-[#dae2fd]">
+              {history.length * 15}
+            </div>
+            <div className="text-[10px] font-bold text-[#8899b8] uppercase tracking-wider">Reputation Earned</div>
+          </div>
+        </div>
+      )}
+
       <div className="pt-4 pb-8">
         <h2 className="text-xl font-extrabold mb-6 flex items-center gap-3 text-[#dae2fd]" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
           <div className="w-10 h-10 rounded-xl bg-[rgba(79,219,200,0.08)] border border-[rgba(79,219,200,0.2)] flex items-center justify-center">
