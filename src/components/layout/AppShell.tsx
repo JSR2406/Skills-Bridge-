@@ -5,6 +5,9 @@ import { TopHeader } from './TopHeader';
 import { MobileNav } from './MobileNav';
 import { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
+import { PageTransition } from '../shared/PageTransition';
+import { BadgeManager } from '@/features/reputation/components/BadgeManager';
+
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -26,15 +29,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className={isMessagesPage ? 'flex-1 overflow-hidden w-full pb-16 md:pb-0' : 'flex-1 overflow-y-auto w-full pb-16 md:pb-0'}>
           {isMessagesPage ? (
             <div className="h-full p-4 md:p-6">
-              {children}
+              <PageTransition>{children}</PageTransition>
             </div>
           ) : (
             <div className="container max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-              {children}
+              <PageTransition>{children}</PageTransition>
             </div>
           )}
         </main>
         <MobileNav />
+        <BadgeManager />
       </div>
     </div>
   );

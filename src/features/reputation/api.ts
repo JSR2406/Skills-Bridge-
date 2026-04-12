@@ -114,6 +114,7 @@ export async function awardPoints(userId: string, type: ReputationEventType, ref
   if (type === 'answer_posted') updates.answersCount = increment(1);
   if (type === 'answer_accepted') updates.acceptedAnswersCount = increment(1);
   if (type === 'test_completed') updates.testsCompletedCount = increment(1);
+  if (type === 'task_completed') updates.tasksCompletedCount = increment(1);
 
   batch.update(userRef, updates);
   

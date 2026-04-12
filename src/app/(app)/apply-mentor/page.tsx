@@ -46,8 +46,8 @@ export default function MentorApplicationPage() {
         fee: parseInt(fee, 10) || 0,
       });
 
-      toast.success('Mentor application submitted successfully! Pending admin approval.');
-      router.push('/feed');
+      toast.success('Congratulations! You are now a Mentor. Your profile is live!');
+      router.push('/mentors');
     } catch (error: any) {
       console.error('Error applying for mentor:', error);
       toast.error('Failed to submit application. Please try again.');

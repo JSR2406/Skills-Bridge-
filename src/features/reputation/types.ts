@@ -5,7 +5,9 @@ export type ReputationEventType =
   | 'answer_accepted' 
   | 'daily_login' 
   | 'test_completed' 
-  | 'doubt_upvoted';
+  | 'doubt_upvoted'
+  | 'task_completed'
+  | 'doubt_asked';
 
 export interface ReputationEvent {
   id?: string;
@@ -19,10 +21,12 @@ export interface ReputationEvent {
 
 export const POINTS_MAP: Record<ReputationEventType, number> = {
   answer_posted: 5,
-  answer_accepted: 20,
+  answer_accepted: 25,
   daily_login: 2,
-  test_completed: 10,
+  test_completed: 15,
   doubt_upvoted: 2,
+  doubt_asked: 5,
+  task_completed: 10,
 };
 
 export type BadgeId = 

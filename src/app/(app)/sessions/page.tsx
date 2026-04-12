@@ -7,6 +7,7 @@ import { SessionBooking } from '@/features/mentors/types';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Calendar, Clock, Video, CheckCircle2, User, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { QuickAddTaskButton } from '@/features/productivity/components/QuickAddTaskButton';
 
 export default function MySessionsPage() {
   const { user } = useAuth();
@@ -124,8 +125,8 @@ export default function MySessionsPage() {
 
                   <div className="shrink-0 md:min-w-[200px]">
                     {isUpcoming ? (
-                      <div className="bg-[rgba(15,23,37,0.7)] border border-[rgba(79,219,200,0.1)] p-4 rounded-xl flex flex-col items-center justify-center text-center">
-                        <span className="text-[10px] text-[#ddb7ff] font-bold uppercase tracking-widest mb-3 block">Meeting Details</span>
+                      <div className="bg-[rgba(15,23,37,0.7)] border border-[rgba(79,219,200,0.1)] p-4 rounded-xl flex flex-col items-center justify-center text-center space-y-3">
+                        <span className="text-[10px] text-[#ddb7ff] font-bold uppercase tracking-widest block">Meeting Details</span>
                         <a 
                           href={session.meetingLink} 
                           target="_blank" 
@@ -134,14 +135,34 @@ export default function MySessionsPage() {
                         >
                           <Video className="w-4 h-4" /> Join Call
                         </a>
+                        <QuickAddTaskButton 
+                          title={`Prep: ${session.mentorName} Session`}
+                          description={`Prepare specific questions and list the doubts I want to discuss with ${session.mentorName}.`}
+                          type="exam-prep"
+                          relatedSessionId={session.id}
+                          buttonText="Schedule Prep"
+                          variant="ghost"
+                          className="w-full text-[12px] text-[#8899b8] hover:text-[#dae2fd] h-8"
+                        />
                       </div>
                     ) : (
-                      <Link 
-                        href={`/mentors/${session.mentorId}`}
-                        className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-bold text-[#8899b8] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[#dae2fd] transition-colors"
-                      >
-                        <User className="w-4 h-4" /> View Mentor <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                      </Link>
+                      <div className="space-y-3">
+                        <Link 
+                          href={`/mentors/${session.mentorId}`}
+                          className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-bold text-[#8899b8] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[#dae2fd] transition-colors"
+                        >
+                          <User className="w-4 h-4" /> View Mentor <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                        </Link>
+                        <QuickAddTaskButton 
+                          title={`Review notes from ${session.mentorName}`}
+                          description={`Follow up on the advice and resources shared during my 1-on-1 session.`}
+                          type="follow-up"
+                          relatedSessionId={session.id}
+                          buttonText="Schedule Follow-up"
+                          variant="ghost"
+                          className="w-full text-[12px] text-[#8899b8] hover:text-[#dae2fd] h-8"
+                        />
+                      </div>
                     )}
                   </div>
                 </div>

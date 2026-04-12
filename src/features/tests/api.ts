@@ -83,12 +83,11 @@ export async function getUserAttempts(userId: string): Promise<TestAttempt[]> {
 export async function getAvailableTests(): Promise<PracticeTest[]> {
   const q = query(
     collection(db, 'tests'),
-    where('createdByAI', '==', false),
-    orderBy('createdAt', 'desc')
+    where('createdByAI', '==', false)
   );
   
   const snap = await getDocs(q);
-  return snap.docs.map(d => {
+  const tests = snap.docs.map(d => {
     const data = d.data();
     return {
       id: d.id,
@@ -96,4 +95,6 @@ export async function getAvailableTests(): Promise<PracticeTest[]> {
       createdAt: data.createdAt?.toDate() || new Date(),
     } as PracticeTest;
   });
+
+  return tests.sort((a, b) => (b.createdAt as Date).getTime() - (a.createdAt as Date).getTime());
 }

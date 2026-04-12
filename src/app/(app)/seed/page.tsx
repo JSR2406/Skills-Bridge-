@@ -1,150 +1,116 @@
 'use client';
 
 import { useState } from 'react';
-import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase/config';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 
-const SAMPLE_TESTS = [
-  {
-    subject: "Computer Science",
-    topic: "Object-Oriented Programming",
-    difficulty: "medium",
-    durationMinutes: 15,
-    createdByAI: false,
-    questions: [
-      {
-        text: "Which of the following is NOT a pillar of Object-Oriented Programming?",
-        options: ["Encapsulation", "Polymorphism", "Compilation", "Inheritance"],
-        correctIndex: 2,
-        explanation: "Compilation is a translation process, not an OOP concept."
-      },
-      {
-        text: "What is polymorphism?",
-        options: ["Hiding data", "Many forms", "Protecting methods", "Static typing"],
-        correctIndex: 1,
-        explanation: "Polymorphism comes from Greek meaning 'many forms', allowing objects of different types to be treated as instances of the same class."
-      },
-      {
-        text: "Which concept allows a class to acquire the properties of another class?",
-        options: ["Abstraction", "Inheritance", "Overloading", "Encapsulation"],
-        correctIndex: 1,
-        explanation: "Inheritance is the mechanism by which one class acquires the properties and runtime behaviors of a parent class."
-      }
-    ]
-  },
-  {
-    subject: "Web Development",
-    topic: "React Core Concepts",
-    difficulty: "easy",
-    durationMinutes: 10,
-    createdByAI: false,
-    questions: [
-      {
-        text: "Which hook is used to manage state in functional components?",
-        options: ["useEffect", "useState", "useContext", "useRef"],
-        correctIndex: 1,
-        explanation: "useState is the React Hook that lets you add a state variable to your component."
-      },
-      {
-        text: "What does the useEffect hook do?",
-        options: ["Performs side effects", "Handles form submittion", "Optimizes rendering", "Mutates the DOM continuously"],
-        correctIndex: 0,
-        explanation: "useEffect lets you perform side effects in function components, like data fetching and subscriptions."
-      }
-    ]
-  }
-];
+export default function SeederPage() {
+  const { user } = useAuth();
+  const [status, setStatus] = useState('Idle');
 
-export default function SeedPage() {
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
-  const handleCreateMentor = async () => {
-    try {
-      setLoading(true);
-      const email = 'mentor_' + Math.floor(Math.random() * 1000) + '@skillbridge.com';
-      const password = 'mentorpassword123';
-      
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      await setDoc(doc(db, 'users', user.uid), {
-        name: 'Sample Mentor',
-        email: email,
-        role: 'mentor',
-        reputation: 1500,
-        badges: ['expert', 'master', 'top_answerer'],
-        streakDays: 45,
-        testsCompletedCount: 12,
-        createdAt: serverTimestamp()
-      });
-
-      // Sign them out so the dev doesn't lose their own session if they want
-      await signOut(auth);
-
-      toast.success('Mentor created!', {
-        description: `Email: ${email} | Password: ${password}`
-      });
-      console.log('Mentor Credentials:', { email, password });
-    } catch (error: any) {
-      toast.error('Error creating mentor', { description: error.message });
-    } finally {
-      setLoading(false);
+  const runSeeder = async () => {
+    if (!user) {
+      setStatus('Error: You must be logged in to seed data. Log in first.');
+      return;
     }
-  };
 
-  const handleCreateTests = async () => {
+    setStatus('Seeding mentors and mock users...');
+
     try {
-      setLoading(true);
-      for (const test of SAMPLE_TESTS) {
-        await addDoc(collection(db, 'tests'), {
-          ...test,
-          createdAt: serverTimestamp()
+      const dummies = [
+        {
+          id: 'mentor_alex_123',
+          name: 'Alex Rivera',
+          avatarUrl: 'https://i.pravatar.cc/150?u=mentor_alex_123',
+          college: 'MIT',
+          headline: 'Senior Full Stack Engineer @ Google',
+          bio: 'I specialize in large-scale Distributed Systems and modern React ecosystems. Happy to help with system design interviews and strict web-development queries.',
+          subjects: ['System Design', 'React', 'Node.js'],
+          expertise: ['Web Development', 'Architecture'],
+          fee: 500,
+          averageRating: 4.8,
+          totalRatings: 120,
+          sessionCount: 230,
+          mentorApproved: true,
+        },
+        {
+          id: 'mentor_sarah_456',
+          name: 'Sarah Chen',
+          avatarUrl: 'https://i.pravatar.cc/150?u=mentor_sarah_456',
+          college: 'Stanford',
+          headline: 'Machine Learning Researcher @ OpenAI',
+          bio: 'Passionate about deep learning and computer vision. Let me help you break into AI and master TensorFlow/PyTorch fundamentals.',
+          subjects: ['Machine Learning', 'Python', 'Data Science'],
+          expertise: ['AI', 'Data Structures'],
+          fee: 800,
+          averageRating: 4.9,
+          totalRatings: 85,
+          sessionCount: 154,
+          mentorApproved: true,
+        },
+        {
+          id: 'mentor_james_789',
+          name: 'James Walker',
+          avatarUrl: 'https://i.pravatar.cc/150?u=mentor_james_789',
+          college: 'IIT Bombay',
+          headline: 'Lead Cloud Architect @ AWS',
+          bio: '10+ years of cloud infrastructure scaling. If your backend needs extreme performance tuning, setup a chat with me.',
+          subjects: ['AWS', 'DevOps', 'Go'],
+          expertise: ['Cloud Infrasturcture', 'Backend'],
+          fee: 650,
+          averageRating: 4.7,
+          totalRatings: 42,
+          sessionCount: 88,
+          mentorApproved: true,
+        }
+      ];
+
+      for (const m of dummies) {
+        // Create user doc
+        await setDoc(doc(db, 'users', m.id), {
+          uid: m.id,
+          name: m.name,
+          email: `${m.name.split(' ')[0].toLowerCase()}@example.com`,
+          avatar: m.avatarUrl,
+          reputation: Math.floor(Math.random() * 500) + 100,
+          badges: ['mentor'],
+          role: 'mentor',
+          expertise: m.expertise,
+          createdAt: new Date(),
+        });
+
+        // Create mentor doc
+        await setDoc(doc(db, 'mentors', m.id), {
+          ...m,
+          userId: m.id,
+          createdAt: new Date(),
+          updatedAt: new Date()
         });
       }
-      toast.success('Sample tests seeded successfully!');
-      router.push('/tests');
+
+      setStatus('Success! 3 Mock Mentors and their user accounts injected into Database. You can navigate back to Mentors page.');
     } catch (error: any) {
-      toast.error('Error seeding tests', { description: error.message });
-    } finally {
-      setLoading(false);
+      console.error(error);
+      setStatus(`Failed: ${error.message}`);
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-8 pt-20">
-      <Card className="bg-surface-card border-border">
-        <CardHeader>
-          <CardTitle>Developer Seed Tools</CardTitle>
-          <CardDescription>Quickly generate sample data for testing.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="p-4 border border-border rounded-lg bg-surface">
-            <h3 className="font-bold mb-2">1. Generate Sample Mentor</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Creates a new Firebase Auth user with the "mentor" role and logs credentials to the console and a toast message.
-            </p>
-            <Button onClick={handleCreateMentor} disabled={loading} className="w-full">
-              Create Mentor Account
-            </Button>
-          </div>
+    <div className="p-20 max-w-2xl mx-auto text-center space-y-6">
+      <h1 className="text-3xl font-bold text-white">Database Mock Seeder</h1>
+      <p className="text-gray-400">This will inject 3 heavily detailed mentors so you can explore Mentorship mapping, Real-Time Messaging and WebRTC Video Calls natively.</p>
+      
+      <button 
+        onClick={runSeeder}
+        className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold text-white shadow-xl transition-all"
+      >
+        Inject Mock Mentors
+      </button>
 
-          <div className="p-4 border border-border rounded-lg bg-surface">
-            <h3 className="font-bold mb-2">2. Seed Practice Tests</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Generates static sample tests (React, CS OOP) for students to attempt. The timer and UI will automatically handle these.
-            </p>
-            <Button onClick={handleCreateTests} disabled={loading} variant="secondary" className="w-full">
-              Seed Practice Tests
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="mt-8 p-4 bg-gray-900 rounded-lg text-sm text-green-400 border border-gray-800">
+        Status: {status}
+      </div>
     </div>
   );
 }

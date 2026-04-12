@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { CheckCircle2, XCircle, Clock, Trophy, ChevronRight, BarChart3, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
+import { QuickAddTaskButton } from '@/features/productivity/components/QuickAddTaskButton';
 
 export default function TestResultPage() {
   const params = useParams() as { id: string };
@@ -60,6 +61,16 @@ export default function TestResultPage() {
           <Button className="bg-brand-500 hover:bg-brand-600" onClick={() => router.push(`/tests/${test.id}`)}>
             <RotateCcw className="w-4 h-4 mr-2" /> Retake Test
           </Button>
+          <QuickAddTaskButton 
+            title={`Revise: ${attempt.topic}`}
+            description={`I scored ${percentage}% on this test. Need to focus on weak areas and read explanations.`}
+            type="revision"
+            subject={attempt.subject}
+            relatedTestId={test.id}
+            buttonText="Schedule Revision"
+            variant="outline"
+            className="border-brand-500/20 text-brand-400 hover:bg-brand-500/10"
+          />
         </div>
       </div>
 

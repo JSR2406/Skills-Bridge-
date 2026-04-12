@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌟 SkillBridge: Peer-to-Peer AI Learning Platform
 
-## Getting Started
+SkillBridge is a modern ecosystem built for students to bridge the gap between doubts and mastery. It combines a vibrant peer-to-peer discussion feed with advanced AI tutoring and integrated mentorship.
 
-First, run the development server:
+**Live Demo**: [https://skillsbridge-jet.vercel.app/](https://skillsbridge-jet.vercel.app/)
+
+## ✨ Key Features
+
+### 🧠 AI Productivity & Study Module (NEW) 🚀
+- **AI Study Plan Generator**: Analyzes your recent activities (Doubt history, Test scores, Mentor sessions) to generate custom 24-hour study priorities.
+- **Smart Task Management**: Integrated scheduler that allows you to "Quick Add" follow-up tasks directly from AI answers or mentor slots.
+- **Progress Tracking**: Real-time stats on tasks completed and subjects mastered.
+
+### ❓ Smart Doubt Resolution
+- **AI First-Response**: AI attempts to solve student doubts in under 5 seconds with structured explanations.
+- **Peer Feed**: If the AI doesn't solve it, the doubt is published to a global community feed for peer resolution.
+- **Verified Answers**: Authors can mark "Accepted" answers, awarding reputation to contributors.
+
+### 🤝 Expert Mentorship
+- **Direct Consultations**: Real-time messaging and video sessions with peer experts.
+- **WebRTC Integration**: Seamless in-app calls using Jitsi Meet.
+- **Mentor Reputation**: Mentors build trust through feedback and successfully resolved doubts.
+
+### 🏆 Gamification Engine
+- **Reputation Points**: Earn points for answering, completing tests, and following your study plan.
+- **Premium Badges**: Unlockable achievements (e.g., "Novice Solver", "Productivity Pro") with animated unlock ceremonies.
+- **Leaderboards**: Subject-specific leaderboards to showcase top contributors.
+
+## 🛠 Tech Stack
+
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Backend / DB / Auth**: Firebase (Firestore, Authentication, Storage)
+- **AI Engine**: OpenRouter (Gemini 2.0 Flash)
+- **Animations**: Framer Motion
+- **Styling**: Vanilla CSS (Modern Glassmorphism Design System)
+- **Deployment**: Vercel
+
+## 📂 Project Structure
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+src/
+├── app/               # Next.js Routes & App Logic
+├── components/        # Reusable UI & Layout Components
+├── features/          # Domain-driven Modules (Auth, Doubts, Mentors, Productivity)
+├── lib/               # Shared Utilities & Firebase Config
+└── styles/            # Core CSS & Design Tokens
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🏁 How to Judge / Test
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Sign Up / Login**: Use the "Demo Student" login or create a new account to see the **Multi-Step Onboarding**.
+2. **Post a Doubt**: Go to "Ask Doubt" and type a question to see the AI analysis in action.
+3. **Optimize Study**: Use the "Productivity" tab to generate your first AI Study Plan based on your interests.
+4. **Complete Goals**: Complete a task to see the Reputation and Badge system respond.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Built with ❤️ for the **Modern Student**.
+📄 [Judge's Presentation Guide](./HACKATHON_PRESENTATION.md)

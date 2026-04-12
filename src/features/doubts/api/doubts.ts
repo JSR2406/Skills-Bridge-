@@ -41,6 +41,8 @@ export function subscribeToDoubts(callback: (doubts: Doubt[]) => void, maxResult
 }
 
 
+import { awardPoints } from '@/features/reputation/api';
+
 export async function createDoubt(data: CreateDoubtInput, authorName: string, authorAvatarUrl?: string): Promise<string> {
   const newDoubt = {
     ...data,
@@ -56,6 +58,10 @@ export async function createDoubt(data: CreateDoubtInput, authorName: string, au
   };
 
   const docRef = await addDoc(collection(db, DOUBTS_COLLECTION), newDoubt);
+  
+  // Award reputation points for asking a doubt
+  awardPoints(data.authorId, 'doubt_asked', docRef.id, 'doubt').catch(console.error);
+  
   return docRef.id;
 }
 

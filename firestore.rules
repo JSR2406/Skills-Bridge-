@@ -84,5 +84,18 @@ service cloud.firestore {
       allow read: if isAuth();
       allow write: if isAuth();
     }
+
+    match /tasks/{taskId} {
+      // Users can only manage their own tasks
+      allow read, write: if isAuth() && (
+        (resource == null && request.resource.data.userId == request.auth.uid) || 
+        (resource != null && resource.data.userId == request.auth.uid)
+      );
+    }
+
+    match /aiProductivityLogs/{logId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+    }
   }
 }

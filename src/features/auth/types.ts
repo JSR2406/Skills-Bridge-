@@ -23,6 +23,8 @@ export interface UserProfile {
   streakDays: number;
   answersCount: number;
   acceptedAnswersCount: number;
+  tasksCompletedCount: number;
+  testAttemptsCount: number;
   badges: string[];
   mentorApproved: boolean;
   createdAt: any; // Firestore Timestamp

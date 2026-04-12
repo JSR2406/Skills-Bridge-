@@ -19,20 +19,21 @@ import { MentorProfile, MentorSlot, SessionBooking } from './types';
 export async function getApprovedMentors(): Promise<MentorProfile[]> {
   const q = query(
     collection(db, 'mentors'),
-    where('mentorApproved', '==', true),
-    orderBy('createdAt', 'desc')
+    where('mentorApproved', '==', true)
   );
   
   const snap = await getDocs(q);
-  return snap.docs.map(d => {
-    const data = d.data();
-    return {
-      userId: d.id,
-      ...data,
-      createdAt: data.createdAt?.toDate() || new Date(),
-      updatedAt: data.updatedAt?.toDate() || new Date(),
-    } as MentorProfile;
-  });
+  return snap.docs
+    .map(d => {
+      const data = d.data();
+      return {
+        userId: d.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as MentorProfile;
+    })
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 export async function getMentorProfile(userId: string): Promise<MentorProfile | null> {
@@ -59,7 +60,7 @@ export async function applyForMentor(
   
   const payload = {
     ...data,
-    mentorApproved: false, // Must be approved by admin
+    mentorApproved: true, // Auto-approved for hackathon prototype
     updatedAt: serverTimestamp(),
   };
 
@@ -75,6 +76,12 @@ export async function applyForMentor(
     // Overwrite existing app but keep stats if they exist
     await updateDoc(ref, payload);
   }
+
+  // Also update global user profile role
+  const userRef = doc(db, 'users', userId);
+  await updateDoc(userRef, {
+    role: 'mentor'
+  });
 }
 
 // Slots
@@ -82,12 +89,10 @@ export async function getMentorSlots(mentorId: string): Promise<MentorSlot[]> {
   const q = query(
     collection(db, 'mentorSlots'),
     where('mentorId', '==', mentorId),
-    where('isBooked', '==', false),
-    orderBy('startTime', 'asc')
+    where('isBooked', '==', false)
   );
   
   const snap = await getDocs(q);
-  // Filtering out past slots on client or here
   const now = new Date();
   
   return snap.docs
@@ -101,7 +106,8 @@ export async function getMentorSlots(mentorId: string): Promise<MentorSlot[]> {
         createdAt: data.createdAt?.toDate() || new Date(),
       } as MentorSlot;
     })
-    .filter(slot => slot.startTime > now);
+    .filter(slot => slot.startTime > now)
+    .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
 }
 
 import { onSnapshot } from 'firebase/firestore';
@@ -110,8 +116,7 @@ export function subscribeToMentorSlots(mentorId: string, callback: (slots: Mento
   const q = query(
     collection(db, 'mentorSlots'),
     where('mentorId', '==', mentorId),
-    where('isBooked', '==', false),
-    orderBy('startTime', 'asc')
+    where('isBooked', '==', false)
   );
   
   return onSnapshot(q, (snap) => {
@@ -127,7 +132,8 @@ export function subscribeToMentorSlots(mentorId: string, callback: (slots: Mento
           createdAt: data.createdAt?.toDate() || new Date(),
         } as MentorSlot;
       })
-      .filter(slot => slot.startTime > now);
+      .filter(slot => slot.startTime > now)
+      .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
     callback(slots);
   });
 }
@@ -181,21 +187,22 @@ export async function confirmBookingPayment(
 export async function getUserSessions(userId: string): Promise<SessionBooking[]> {
   const q = query(
     collection(db, 'bookings'),
-    where('studentId', '==', userId),
-    orderBy('startTime', 'desc')
+    where('studentId', '==', userId)
   );
   
   const snap = await getDocs(q);
-  return snap.docs.map(d => {
-    const data = d.data();
-    return {
-      id: d.id,
-      ...data,
-      startTime: data.startTime?.toDate() || new Date(),
-      endTime: data.endTime?.toDate() || new Date(),
-      createdAt: data.createdAt?.toDate() || new Date(),
-    } as SessionBooking;
-  });
+  return snap.docs
+    .map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        startTime: data.startTime?.toDate() || new Date(),
+        endTime: data.endTime?.toDate() || new Date(),
+        createdAt: data.createdAt?.toDate() || new Date(),
+      } as SessionBooking;
+    })
+    .sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
 }
 
 export function subscribeToUserSessions(userId: string, callback: (sessions: SessionBooking[]) => void) {

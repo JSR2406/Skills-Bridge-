@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { QuickAddTaskButton } from '@/features/productivity/components/QuickAddTaskButton';
 
 export default function DoubtDetailPage() {
   const params = useParams() as { id: string };
@@ -133,7 +134,7 @@ export default function DoubtDetailPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-20">
       {/* Back navigation */}
-      <div>
+      <div className="flex items-center justify-between">
         <Link
           href="/feed"
           className="inline-flex items-center gap-1.5 text-sm text-[#8899b8] hover:text-[#4fdbc8] transition-colors font-semibold"
@@ -141,6 +142,15 @@ export default function DoubtDetailPage() {
           <ArrowLeft className="w-4 h-4" />
           Back to feed
         </Link>
+        <QuickAddTaskButton 
+          title={`Follow up: ${doubt.title}`}
+          type="follow-up"
+          subject={doubt.subject}
+          relatedDoubtId={doubt.id}
+          buttonText="Schedule Follow-up"
+          variant="outline"
+          className="border-brand-500/20 text-brand-400 hover:bg-brand-500/10"
+        />
       </div>
 
       {/* ── Doubt Header ── */}
@@ -185,21 +195,23 @@ export default function DoubtDetailPage() {
           </h1>
 
           <div className="flex items-center gap-3 mb-6 p-3 rounded-xl bg-[rgba(15,23,37,0.5)] border border-[rgba(79,219,200,0.08)] w-fit">
-            <Avatar className="w-9 h-9 ring-1 ring-[rgba(79,219,200,0.2)] shadow-[0_0_12px_rgba(79,219,200,0.15)]">
-              <AvatarImage src={doubt.authorAvatarUrl} alt={doubt.authorName} />
-              <AvatarFallback className="text-xs font-bold" style={{ background: 'linear-gradient(135deg, #4fdbc8, #ddb7ff)', color: '#00201c' }}>
-                {doubt.authorName?.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-[#dae2fd]">{doubt.authorName}</span>
-                <span className="text-[10px] text-[#4fdbc8] uppercase tracking-wider font-bold">Author</span>
+            <Link href={`/profile/${doubt.authorId}`} className="flex items-center gap-3 group/author">
+              <Avatar className="w-9 h-9 ring-1 ring-[rgba(79,219,200,0.2)] shadow-[0_0_12px_rgba(79,219,200,0.15)] group-hover/author:ring-[#4fdbc8] transition-all">
+                <AvatarImage src={doubt.authorAvatarUrl} alt={doubt.authorName} />
+                <AvatarFallback className="text-xs font-bold" style={{ background: 'linear-gradient(135deg, #4fdbc8, #ddb7ff)', color: '#00201c' }}>
+                  {doubt.authorName?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-[#dae2fd] group-hover/author:text-[#4fdbc8] transition-colors">{doubt.authorName}</span>
+                  <span className="text-[10px] text-[#4fdbc8] uppercase tracking-wider font-bold">Author</span>
+                </div>
+                <span className="text-xs text-[#8899b8] font-medium">
+                  {formatDistanceToNow(doubt.createdAt instanceof Date ? doubt.createdAt : new Date(), { addSuffix: true })}
+                </span>
               </div>
-              <span className="text-xs text-[#8899b8] font-medium">
-                {formatDistanceToNow(doubt.createdAt instanceof Date ? doubt.createdAt : new Date(), { addSuffix: true })}
-              </span>
-            </div>
+            </Link>
             <div className="ml-4 pl-4 border-l border-[rgba(79,219,200,0.15)] flex flex-col justify-center">
               <div className="flex items-center gap-1 text-[11px] font-bold text-[#ddb7ff] uppercase tracking-wider">
                 <MessageCircle className="w-3.5 h-3.5" />
@@ -273,18 +285,20 @@ export default function DoubtDetailPage() {
 
                 <div className="flex items-center justify-between mt-6 pt-5 border-t border-[rgba(79,219,200,0.08)]">
                   <div className="flex items-center gap-3">
-                    <Avatar className="w-8 h-8 ring-1 ring-[rgba(221,183,255,0.2)]">
-                      <AvatarImage src={answer.authorAvatarUrl} alt={answer.authorName} />
-                      <AvatarFallback className="text-[10px]" style={{ background: 'linear-gradient(135deg, #131b2e, #1c2440)', color: '#ddb7ff' }}>
-                        {answer.authorName?.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span className="text-[13px] font-bold text-[#dae2fd]">{answer.authorName}</span>
-                      <span className="text-[11px] font-medium text-[#8899b8]">
-                        {formatDistanceToNow(answer.createdAt, { addSuffix: true })}
-                      </span>
-                    </div>
+                    <Link href={`/profile/${answer.authorId}`} className="flex items-center gap-3 group/answerer">
+                      <Avatar className="w-8 h-8 ring-1 ring-[rgba(221,183,255,0.2)] group-hover/answerer:ring-[#ddb7ff] transition-all">
+                        <AvatarImage src={answer.authorAvatarUrl} alt={answer.authorName} />
+                        <AvatarFallback className="text-[10px]" style={{ background: 'linear-gradient(135deg, #131b2e, #1c2440)', color: '#ddb7ff' }}>
+                          {answer.authorName?.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="text-[13px] font-bold text-[#dae2fd] group-hover/answerer:text-[#ddb7ff] transition-colors">{answer.authorName}</span>
+                        <span className="text-[11px] font-medium text-[#8899b8]">
+                          {formatDistanceToNow(answer.createdAt, { addSuffix: true })}
+                        </span>
+                      </div>
+                    </Link>
                   </div>
 
                   {isDoubtAuthor && !answer.isAccepted && (

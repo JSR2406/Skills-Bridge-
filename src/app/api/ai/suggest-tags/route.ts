@@ -1,12 +1,10 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
-const apiKey = process.env.GEMINI_API_KEY || '';
-const genAI = new GoogleGenerativeAI(apiKey);
+const apiKey = process.env.OPENROUTER_API_KEY || '';
 
 export async function POST(req: Request) {
   if (!apiKey) {
-    return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
+    return NextResponse.json({ error: 'OPENROUTER_API_KEY is not configured in .env.local' }, { status: 500 });
   }
 
   try {
@@ -16,8 +14,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Title or content is required' }, { status: 400 });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
     const prompt = `Based on the following question:
 Title: ${title || ''}
 Description: ${content || ''}
@@ -26,8 +22,27 @@ Suggest up to 5 relevant technical tags (1 word each if possible, hyphenated if 
 Return ONLY a comma-separated list of tags, all lowercase. Nothing else.
 Example output: react, javascript, frontend`;
 
-    const result = await model.generateContent(prompt);
-    let text = result.response.text().trim();
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.0-flash-lite-preview-02-05:free",
+        messages: [
+          { role: "user", content: prompt }
+        ]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`OpenRouter error: ${err}`);
+    }
+
+    const json = await res.json();
+    const text = json.choices[0].message.content.trim();
 
     const rawTags = text
       .split(',')
@@ -37,7 +52,7 @@ Example output: react, javascript, frontend`;
 
     return NextResponse.json({ tags });
   } catch (error: any) {
-    console.error('Gemini Tag Suggestion Error:', error);
+    console.error('OpenRouter Tag Suggestion Error:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to suggest tags' },
       { status: 500 }

@@ -296,8 +296,8 @@ export default function PracticeTestsPage() {
               const isPerfect = percentage === 100;
               const isPoor = percentage < 40;
               
-              let scoreColor = isGood ? '#4fdbc8' : isPoor ? '#ff6b6b' : '#ffb84d';
-              let scoreBg = isGood ? 'rgba(79,219,200,0.1)' : isPoor ? 'rgba(255,107,107,0.1)' : 'rgba(255,184,77,0.1)';
+              const scoreColor = isGood ? '#4fdbc8' : isPoor ? '#ff6b6b' : '#ffb84d';
+              const scoreBg = isGood ? 'rgba(79,219,200,0.1)' : isPoor ? 'rgba(255,107,107,0.1)' : 'rgba(255,184,77,0.1)';
               
               return (
                 <div 

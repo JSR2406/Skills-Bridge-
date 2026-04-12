@@ -1,12 +1,10 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
-const apiKey = process.env.GEMINI_API_KEY || '';
-const genAI = new GoogleGenerativeAI(apiKey);
+const apiKey = process.env.OPENROUTER_API_KEY || '';
 
 export async function POST(req: Request) {
   if (!apiKey) {
-    return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
+    return NextResponse.json({ error: 'OPENROUTER_API_KEY is not configured in .env.local' }, { status: 500 });
   }
 
   try {
@@ -16,41 +14,67 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Subject and topic are required' }, { status: 400 });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-    const prompt = `You are an expert examiner. Generate a multiple-choice practice test.
+    const prompt = `You are a world-class educational examiner for SkillBridge. Generate a highly structured, valid multiple-choice practice test.
 Subject: ${subject}
 Topic: ${topic}
 Difficulty: ${difficulty}
 Number of questions: ${questionCount}
 
-Return EXACTLY a valid JSON object with a single key "questions" containing an array.
-Do NOT include Markdown formatting like \`\`\`json or \`\`\`. Just the raw JSON string.
+Guidelines for Quality:
+1. Use plausible distractors (incorrect options should represent common misconceptions).
+2. Each question MUST have a 'category' (e.g., 'Conceptual', 'Application', 'Analysis', 'Syntax').
+3. The 'explanation' should not just state the answer, but provide a 'Reasoning Step' to help the student learn.
+4. If the topic involves programming, include snippets in markdown format within the question text where appropriate.
 
-Format of each question:
+Return STIRCTLY a valid JSON object:
 {
-  "id": "q1",
-  "text": "The question text itself",
-  "options": ["Option A", "Option B", "Option C", "Option D"],
-  "correctIndex": 0,
-  "explanation": "Brief explanation of why the correct option is correct."
+  "questions": [
+    {
+      "id": "q1",
+      "text": "The question content...",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctIndex": 0,
+      "category": "Application",
+      "explanation": "Scaffolded reasoning why A is correct and why others are common mistakes..."
+    }
+  ]
 }`;
 
-    const result = await model.generateContent(prompt);
-    let text = result.response.text().trim();
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.0-flash-lite-preview-02-05:free",
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "user", content: prompt }
+        ]
+      })
+    });
 
-    // Cleanup AI output just in case the AI wraps in markdown blocks
-    if (text.startsWith('```json')) {
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`OpenRouter error: ${err}`);
+    }
+
+    const json = await res.json();
+    let text = json.choices[0].message.content.trim();
+
+    // Cleanup AI output just in case
+    if (text.startsWith('\`\`\`json')) {
       text = text.substring(7, text.length - 3).trim();
-    } else if (text.startsWith('```')) {
+    } else if (text.startsWith('\`\`\`')) {
       text = text.substring(3, text.length - 3).trim();
     }
 
     const parsed = JSON.parse(text);
 
-    return NextResponse.json({ questions: parsed.questions });
+    return NextResponse.json({ questions: parsed.questions || parsed });
   } catch (error: any) {
-    console.error('Gemini Test Generation Error:', error);
+    console.error('OpenRouter Test Generation Error:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to generate test' },
       { status: 500 }

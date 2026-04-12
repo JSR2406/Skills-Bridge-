@@ -29,3 +29,12 @@ export type CreateDoubtInput = Omit<
   Doubt,
   'id' | 'upvotes' | 'downvotes' | 'voteScore' | 'responsesCount' | 'isResolved' | 'createdAt' | 'updatedAt' | 'authorName' | 'authorAvatarUrl'
 >;
+
+export interface AIExplanation {
+  restatedQuestion: string;
+  steps: string[];
+  commonMistakes: string[];
+  summaryNotes: string;
+  titleSuggestion?: string;
+  tagSuggestions?: string[];
+}

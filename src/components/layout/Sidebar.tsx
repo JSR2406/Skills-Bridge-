@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { name: 'Mentors', href: '/mentors', icon: Users },
   { name: 'My Sessions', href: '/sessions', icon: Calendar },
   { name: 'Practice Tests', href: '/tests', icon: BookOpenCheck },
+  { name: 'Productivity', href: '/productivity', icon: Sparkles },
   { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
   { name: 'Notifications', href: '/notifications', icon: Bell },
   { name: 'Settings', href: '/settings', icon: Settings },
