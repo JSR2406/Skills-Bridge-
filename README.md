@@ -4,6 +4,9 @@ SkillBridge is a modern ecosystem built for students to bridge the gap between d
 
 **Live Demo**: [https://skillsbridge-jet.vercel.app/](https://skillsbridge-jet.vercel.app/)
 
+**Demo video**:[https://www.loom.com/share/27cff3f0311349f99480fe117ea5e8b5](https://www.loom.com/share/27cff3f0311349f99480fe117ea5e8b5)
+
+
 ## ✨ Key Features
 
 ### 🧠 AI Productivity & Study Module (NEW) 🚀
