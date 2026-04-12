@@ -25,6 +25,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { QuickAddTaskButton } from '@/features/productivity/components/QuickAddTaskButton';
+import { DiagramViewer } from '@/features/doubts/components/DiagramViewer';
 
 export default function DoubtDetailPage() {
   const params = useParams() as { id: string };
@@ -232,6 +233,9 @@ export default function DoubtDetailPage() {
             prose-code:text-[#ddb7ff] prose-code:bg-[rgba(221,183,255,0.08)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md"
             dangerouslySetInnerHTML={{ __html: doubt.content }}
           />
+
+          {/* AI Diagram Visualization */}
+          <DiagramViewer doubtTitle={doubt.title} doubtContent={doubt.content.replace(/<[^>]+>/g, ' ')} />
           </div>
         </div>
       </div>

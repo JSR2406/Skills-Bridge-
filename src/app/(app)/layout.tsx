@@ -5,6 +5,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { BookOpenCheck } from 'lucide-react';
+import { usePushSubscription } from '@/features/notifications/hooks/usePushSubscription';
 
 
 function LoadingScreen({ message }: { message: string }) {
@@ -81,6 +82,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, profile, isAuthenticated, isProfileComplete, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+
+  // Wire push notifications after login
+  usePushSubscription(user?.uid ?? null);
 
   useEffect(() => {
     if (!loading) {
