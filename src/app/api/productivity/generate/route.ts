@@ -24,7 +24,9 @@ Provide the JSON Study Plan now. ONLY output the raw JSON object, without any ma
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://skillsbridge-jet.vercel.app",
+        "X-Title": "SkillBridge"
       },
       body: JSON.stringify({
         model: "openai/gpt-oss-20b:free",
