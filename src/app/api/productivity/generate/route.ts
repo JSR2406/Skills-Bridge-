@@ -27,7 +27,8 @@ Provide the JSON Study Plan now. ONLY output the raw JSON object, without any ma
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "nvidia/nemotron-3-super-120b-a12b:free",
+        model: "openai/gpt-oss-20b:free",
+        response_format: { type: "json_object" },
         messages: [
           { role: "user", content: fullPrompt }
         ]

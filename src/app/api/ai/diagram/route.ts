@@ -42,7 +42,7 @@ flowchart TD
         'X-Title': 'SkillBridge',
       },
       body: JSON.stringify({
-        model: 'nvidia/nemotron-3-super-120b-a12b:free',
+        model: 'openai/gpt-oss-20b:free',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 800,
         temperature: 0.3,
