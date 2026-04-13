@@ -38,11 +38,12 @@ Request JSON Structure:
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://skillsbridge-jet.vercel.app",
+        "X-Title": "SkillBridge"
       },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash-lite-preview-02-05:free",
-        response_format: { type: "json_object" },
+        model: "openrouter/free",
         messages: [
           { role: "user", content: prompt }
         ]

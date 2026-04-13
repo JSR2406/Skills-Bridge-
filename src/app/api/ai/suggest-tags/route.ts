@@ -26,10 +26,12 @@ Example output: react, javascript, frontend`;
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://skillsbridge-jet.vercel.app",
+        "X-Title": "SkillBridge"
       },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash-lite-preview-02-05:free",
+        model: "openrouter/free",
         messages: [
           { role: "user", content: prompt }
         ]
