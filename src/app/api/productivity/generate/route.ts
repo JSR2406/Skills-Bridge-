@@ -29,8 +29,7 @@ Provide the JSON Study Plan now. ONLY output the raw JSON object, without any ma
         "X-Title": "SkillBridge"
       },
       body: JSON.stringify({
-        model: "openai/gpt-oss-20b:free",
-        response_format: { type: "json_object" },
+        model: "openrouter/free",
         messages: [
           { role: "user", content: fullPrompt }
         ]

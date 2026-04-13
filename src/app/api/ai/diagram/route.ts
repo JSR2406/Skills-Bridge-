@@ -42,7 +42,7 @@ flowchart TD
         'X-Title': 'SkillBridge',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-oss-20b:free',
+        model: 'openrouter/free',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 800,
         temperature: 0.3,
