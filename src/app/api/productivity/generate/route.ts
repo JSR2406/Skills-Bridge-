@@ -27,7 +27,7 @@ Provide the JSON Study Plan now. ONLY output the raw JSON object, without any ma
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash-exp:free",
+        model: "nvidia/nemotron-3-super-120b-a12b:free",
         messages: [
           { role: "user", content: fullPrompt }
         ]
