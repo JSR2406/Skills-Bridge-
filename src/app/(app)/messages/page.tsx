@@ -23,6 +23,7 @@ import {
   X,
   Loader2,
   PhoneCall,
+  ChevronLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -176,10 +177,13 @@ export default function MessagesPage() {
   });
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex rounded-xl overflow-hidden glass-card animate-fade-in">
+    <div className="h-full w-full flex md:rounded-xl border-0 md:border overflow-hidden md:glass-card animate-fade-in relative bg-[rgba(11,19,38,0.6)] md:bg-transparent">
       {/* ── Sidebar ── */}
       <div
-        className="w-80 shrink-0 flex flex-col border-r"
+        className={cn(
+          "w-full md:w-80 shrink-0 flex flex-col border-r h-full",
+          activeConvId ? "hidden md:flex" : "flex"
+        )}
         style={{ borderColor: 'rgba(79,219,200,0.08)', background: 'rgba(11,19,38,0.6)' }}
       >
         {/* Header */}
@@ -364,15 +368,26 @@ export default function MessagesPage() {
       </div>
 
       {/* ── Chat Area ── */}
-      <div className="flex-1 flex flex-col min-w-0" style={{ background: 'rgba(15,23,37,0.5)' }}>
+      <div 
+        className={cn(
+          "flex-1 flex flex-col min-w-0 h-full bg-[rgba(15,23,37,0.5)]",
+          !activeConvId ? "hidden md:flex" : "flex"
+        )}
+      >
         {activeConvId && activeConv ? (
           <>
             {/* Chat Header */}
             <div
-              className="h-14 flex items-center justify-between px-5 border-b shrink-0"
+              className="h-14 flex items-center justify-between px-3 md:px-5 border-b shrink-0"
               style={{ borderColor: 'rgba(79,219,200,0.08)', background: 'rgba(11,19,38,0.7)' }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 md:gap-3">
+                <button
+                  onClick={() => setActiveConvId(null)}
+                  className="md:hidden p-1.5 -ml-1.5 rounded-lg text-[#8899b8] hover:text-[#dae2fd] hover:bg-[rgba(79,219,200,0.08)] transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
                 <Avatar className="w-9 h-9">
                   <AvatarImage src={otherAvatar} />
                   <AvatarFallback

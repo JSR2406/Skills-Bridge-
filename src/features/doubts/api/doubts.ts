@@ -124,14 +124,14 @@ export async function voteDoubt(doubtId: string, userId: string, voteValue: 1 | 
 
     if (currentVoteValue === voteValue) {
       // Un-vote
-      const newScore = doubtDoc.data().voteScore - currentVoteValue;
+      const newScore = (doubtDoc.data().voteScore || 0) - currentVoteValue;
       const upAdjust = currentVoteValue === 1 ? -1 : 0;
       const downAdjust = currentVoteValue === -1 ? -1 : 0;
 
       transaction.update(doubtRef, {
         voteScore: newScore,
-        upvotes: doubtDoc.data().upvotes + upAdjust,
-        downvotes: doubtDoc.data().downvotes + downAdjust,
+        upvotes: (doubtDoc.data().upvotes || 0) + upAdjust,
+        downvotes: (doubtDoc.data().downvotes || 0) + downAdjust,
       });
       transaction.delete(voteRef);
     } else {
@@ -145,12 +145,12 @@ export async function voteDoubt(doubtId: string, userId: string, voteValue: 1 | 
       if (voteValue === 1) upAdjust += 1;
       if (voteValue === -1) downAdjust += 1;
 
-      const newScore = doubtDoc.data().voteScore - currentVoteValue + voteValue;
+      const newScore = (doubtDoc.data().voteScore || 0) - currentVoteValue + voteValue;
 
       transaction.update(doubtRef, {
         voteScore: newScore,
-        upvotes: doubtDoc.data().upvotes + upAdjust,
-        downvotes: doubtDoc.data().downvotes + downAdjust,
+        upvotes: (doubtDoc.data().upvotes || 0) + upAdjust,
+        downvotes: (doubtDoc.data().downvotes || 0) + downAdjust,
       });
 
       transaction.set(voteRef, {

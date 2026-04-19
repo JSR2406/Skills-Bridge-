@@ -44,10 +44,6 @@ service cloud.firestore {
       allow write: if isAuth();
     }
 
-    match /reputationEvents/{eventId} {
-      allow read: if isAuth() && resource.data.userId == request.auth.uid;
-      allow write: if isAuth();
-    }
 
     match /tests/{testId} {
       allow read: if true;
@@ -107,10 +103,21 @@ service cloud.firestore {
       allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
     }
 
+    // Voting System
+    match /votes/{voteId} {
+      allow read: if true;
+      allow write: if isAuth() && (
+        (request.method == 'create' && request.resource.data.userId == request.auth.uid) ||
+        (request.method == 'update' && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid)
+      );
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
+    }
+
     // Reputation - Keep accessible for client side payout but restrict to owners
     match /reputationEvents/{eventId} {
       allow read: if isAuth() && resource.data.userId == request.auth.uid;
       allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuth() && resource.data.userId == request.auth.uid;
     }
   }
 }

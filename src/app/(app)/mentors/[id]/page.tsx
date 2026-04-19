@@ -10,9 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
-import { Star, Video, Clock, IndianRupee, Loader2, Calendar, MessageSquare } from 'lucide-react';
+import { Star, Video, Clock, IndianRupee, Loader2, Calendar, MessageSquare, Phone } from 'lucide-react';
 import { toast } from 'sonner';
-import { getOrCreateConversation } from '@/features/messages/api';
+import { getOrCreateConversation, sendCallInvite } from '@/features/messages/api';
 
 export default function MentorProfilePage() {
   const params = useParams() as { id: string };
@@ -139,6 +139,33 @@ export default function MentorProfilePage() {
     }
   };
 
+  const handleCallMentor = async (type: 'voice' | 'video') => {
+    if (!user || !profile || !mentor) {
+      toast.error(`Please login to ${type} call this mentor`);
+      return;
+    }
+    try {
+      const convId = await getOrCreateConversation(
+        user.uid, profile.name, profile.avatarUrl || '',
+        mentor.userId, mentor.name, mentor.avatarUrl || ''
+      );
+      
+      const roomId = `skillbridge_${convId}_${Date.now()}`;
+      await sendCallInvite(
+        convId,
+        user.uid,
+        profile.name,
+        profile.avatarUrl || '',
+        roomId,
+        type,
+        mentor.userId
+      );
+      router.push(`/call/${roomId}?type=${type}&name=${encodeURIComponent(profile.name)}`);
+    } catch (e) {
+      toast.error('Failed to start call');
+    }
+  };
+
   if (isLoading) return <LoadingSkeleton />;
   if (!mentor) return <div className="text-center py-20 text-muted-foreground">Mentor not found</div>;
 
@@ -170,14 +197,32 @@ export default function MentorProfilePage() {
                   <span className="text-xs text-muted-foreground">({mentor.totalRatings})</span>
                 </div>
                 {user?.uid !== mentor.userId && (
-                  <button
-                    onClick={handleMessageMentor}
-                    className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold text-[#4fdbc8] transition-all hover:opacity-90"
-                    style={{ background: 'rgba(79,219,200,0.1)', border: '1px solid rgba(79,219,200,0.25)' }}
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    Message
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleMessageMentor}
+                      className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold text-[#4fdbc8] transition-all hover:opacity-90"
+                      style={{ background: 'rgba(79,219,200,0.1)', border: '1px solid rgba(79,219,200,0.25)' }}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      Message
+                    </button>
+                    <button
+                      onClick={() => handleCallMentor('voice')}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold text-[#4fdbc8] transition-all hover:opacity-90"
+                      style={{ background: 'rgba(79,219,200,0.1)', border: '1px solid rgba(79,219,200,0.25)' }}
+                      title="Voice Call"
+                    >
+                      <Phone className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleCallMentor('video')}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold text-[#ddb7ff] transition-all hover:opacity-90"
+                      style={{ background: 'rgba(221,183,255,0.1)', border: '1px solid rgba(221,183,255,0.25)' }}
+                      title="Video Call"
+                    >
+                      <Video className="w-4 h-4" />
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
