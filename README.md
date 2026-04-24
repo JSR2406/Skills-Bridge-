@@ -19,10 +19,13 @@ SkillBridge is a modern ecosystem built for students to bridge the gap between d
 - **Peer Feed**: If the AI doesn't solve it, the doubt is published to a global community feed for peer resolution.
 - **Verified Answers**: Authors can mark "Accepted" answers, awarding reputation to contributors.
 
-### 🤝 Expert Mentorship
+### 🤝 Expert Mentorship + Smart Matching
+- **Smart Mentor Recommendations**: Heuristic engine ranks mentors using 5 signals — Topic Match (40 pts from weak subjects/doubts), Rating (25 pts), Availability (20 pts), Novelty (10 pts), Budget fit (5 pts). Score shown as X/100 per mentor card with a "Why recommended?" breakdown.
+- **Race-Condition-Safe Booking**: Slot booking uses Firestore `runTransaction` — two students cannot claim the same slot simultaneously.
 - **Direct Consultations**: Real-time messaging and video sessions with peer experts.
 - **WebRTC Integration**: Seamless in-app calls using Jitsi Meet.
 - **Mentor Reputation**: Mentors build trust through feedback and successfully resolved doubts.
+- **Idempotent Session Reminders**: Cron-based reminders (30 min + 5 min before sessions) use atomic flag writes to guarantee at-most-once delivery.
 
 ### 🏆 Gamification Engine
 - **Reputation Points**: Earn points for answering, completing tests, and following your study plan.
