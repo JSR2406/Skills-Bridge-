@@ -8,7 +8,8 @@ import {
   Home, 
   MessageSquarePlus, 
   Users, 
-  Calendar, 
+  Calendar,
+  CalendarPlus,
   BookOpenCheck,
   Bell,
   Settings,
@@ -107,6 +108,35 @@ export function Sidebar() {
             </Link>
           );
         })}
+
+        {/* Mentor section */}
+        {profile?.role === 'mentor' && (
+          <>
+            <div className={cn("mt-5 mb-2", sidebarCollapsed ? "text-center" : "px-3")}>
+              <span className="text-[10px] font-semibold text-[#8899b8]/60 uppercase tracking-[0.12em]">
+                {!sidebarCollapsed ? 'Mentor' : '···'}
+              </span>
+            </div>
+            <Link
+              href="/mentor-slots"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
+                pathname.startsWith('/mentor-slots')
+                  ? "bg-[rgba(79,219,200,0.1)] text-[#4fdbc8] shadow-[inset_3px_0_0_#4fdbc8]"
+                  : "text-[#8899b8] hover:bg-[rgba(79,219,200,0.05)] hover:text-[#dae2fd]"
+              )}
+            >
+              <CalendarPlus className="w-[18px] h-[18px] shrink-0" />
+              {!sidebarCollapsed && <span className="font-medium text-[13px] tracking-wide">My Slots</span>}
+              {sidebarCollapsed && (
+                <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-[#1c2440] text-[#dae2fd] text-xs rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 z-50 whitespace-nowrap shadow-xl border border-[rgba(79,219,200,0.12)] transition-opacity">
+                  My Slots
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#1c2440]" />
+                </div>
+              )}
+            </Link>
+          </>
+        )}
 
         {/* Admin section */}
         {profile?.role === 'admin' && (

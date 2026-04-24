@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { getAllUsers, updateUserRole, getAllDoubts, deleteDoubt, getPlatformStats } from '@/features/admin/api';
+import { getPendingMentorApplications, approveMentorApplication, rejectMentorApplication } from '@/features/mentors/api';
+import { PendingMentorApplication } from '@/features/mentors/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
-import { ShieldAlert, Users, MessageSquareQuote, Shield, ShieldCheck, Trash2, BarChart3, TrendingUp, Award, Zap } from 'lucide-react';
+import { ShieldAlert, Users, MessageSquareQuote, Shield, ShieldCheck, Trash2, BarChart3, TrendingUp, Award, Zap, CheckCircle2, XCircle, GraduationCap, IndianRupee, Star } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminDashboard() {
@@ -21,6 +23,8 @@ export default function AdminDashboard() {
   const [doubts, setDoubts] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [fetching, setFetching] = useState(true);
+  const [pendingMentors, setPendingMentors] = useState<PendingMentorApplication[]>([]);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -32,14 +36,16 @@ export default function AdminDashboard() {
     async function loadData() {
       setFetching(true);
       try {
-        const [u, d, s] = await Promise.all([
+        const [u, d, s, p] = await Promise.all([
           getAllUsers(),
           getAllDoubts(),
-          getPlatformStats()
+          getPlatformStats(),
+          getPendingMentorApplications(),
         ]);
         setUsers(u);
         setDoubts(d);
         setStats(s);
+        setPendingMentors(p);
       } catch (err: any) {
         toast.error("Failed to load admin data: " + err.message);
       } finally {
@@ -48,6 +54,33 @@ export default function AdminDashboard() {
     }
     loadData();
   }, [profile, loading, router]);
+
+  const handleApprove = async (userId: string) => {
+    try {
+      setApprovingId(userId);
+      await approveMentorApplication(userId);
+      toast.success('Mentor approved and live!');
+      setPendingMentors(prev => prev.filter(m => m.userId !== userId));
+    } catch (err: any) {
+      toast.error('Approval failed: ' + err.message);
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleReject = async (userId: string) => {
+    if (!confirm('Reject and delete this mentor application? This cannot be undone.')) return;
+    try {
+      setApprovingId(userId);
+      await rejectMentorApplication(userId);
+      toast.success('Application rejected');
+      setPendingMentors(prev => prev.filter(m => m.userId !== userId));
+    } catch (err: any) {
+      toast.error('Rejection failed: ' + err.message);
+    } finally {
+      setApprovingId(null);
+    }
+  };
 
   const handleRoleChange = async (userId: string, newRole: 'student' | 'mentor' | 'admin') => {
     try {
@@ -89,7 +122,7 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="analytics" className="w-full">
-        <TabsList className="grid w-full max-w-[600px] grid-cols-3 bg-surface-elevated border border-border">
+        <TabsList className="grid w-full max-w-[800px] grid-cols-4 bg-surface-elevated border border-border">
           <TabsTrigger value="analytics" className="data-[state=active]:bg-brand-500/20 data-[state=active]:text-brand-400">
             <BarChart3 className="w-4 h-4 mr-2" /> Analytics
           </TabsTrigger>
@@ -98,6 +131,14 @@ export default function AdminDashboard() {
           </TabsTrigger>
           <TabsTrigger value="content" className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400">
             <MessageSquareQuote className="w-4 h-4 mr-2" /> Content
+          </TabsTrigger>
+          <TabsTrigger value="mentors" className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400 relative">
+            <GraduationCap className="w-4 h-4 mr-2" /> Mentors
+            {pendingMentors.length > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-red-500 text-white">
+                {pendingMentors.length}
+              </span>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -303,6 +344,77 @@ export default function AdminDashboard() {
                    ))
                  )}
                </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* MENTOR APPROVALS TAB */}
+        <TabsContent value="mentors" className="mt-6 space-y-4">
+          <Card className="bg-surface-card border-border">
+            <CardHeader className="border-b border-border/50">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <GraduationCap className="w-5 h-5 text-green-400" />
+                Pending Mentor Applications
+                {pendingMentors.length > 0 && (
+                  <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-black bg-red-500/15 text-red-400 border border-red-500/20">
+                    {pendingMentors.length} pending
+                  </span>
+                )}
+              </CardTitle>
+              <CardDescription>Review and approve or reject mentor applications below.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {pendingMentors.length === 0 ? (
+                <div className="py-16 text-center">
+                  <CheckCircle2 className="w-10 h-10 text-green-400/30 mx-auto mb-3" />
+                  <p className="font-bold text-foreground">All caught up!</p>
+                  <p className="text-sm text-muted-foreground mt-1">No pending mentor applications.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border/50">
+                  {pendingMentors.map(m => (
+                    <div key={m.userId} className="p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-bold text-foreground">{m.name}</p>
+                          <Badge variant="outline" className="text-[10px] border-green-500/30 text-green-400">
+                            Pending Review
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{m.headline}</p>
+                        <p className="text-xs text-muted-foreground">{m.college}</p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {(m.subjects || []).slice(0, 4).map(s => (
+                            <span key={s} className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-surface-elevated text-muted-foreground border border-border">{s}</span>
+                          ))}
+                          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                            <IndianRupee className="w-3 h-3" />{m.fee}/session
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          disabled={approvingId === m.userId}
+                          onClick={() => handleApprove(m.userId)}
+                          className="bg-green-500 hover:bg-green-600 text-white font-bold gap-1.5"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={approvingId === m.userId}
+                          onClick={() => handleReject(m.userId)}
+                          className="text-red-400 hover:bg-red-500/10 hover:text-red-400 font-bold gap-1.5"
+                        >
+                          <XCircle className="w-3.5 h-3.5" /> Reject
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

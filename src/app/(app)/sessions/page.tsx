@@ -5,10 +5,11 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { subscribeToUserSessions } from '@/features/mentors/api';
 import { SessionBooking } from '@/features/mentors/types';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
-import { Calendar, Clock, Video, CheckCircle2, User, ChevronRight, Copy, Check, ExternalLink } from 'lucide-react';
+import { Calendar, Clock, Video, CheckCircle2, User, ChevronRight, Copy, Check, Star } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { QuickAddTaskButton } from '@/features/productivity/components/QuickAddTaskButton';
+import { RateSessionModal } from '@/features/mentors/components/RateSessionModal';
 import { toast } from 'sonner';
 
 /** Returns true if session starts within 15 min from now OR is currently running */
@@ -37,6 +38,7 @@ export default function MySessionsPage() {
   const [sessions, setSessions] = useState<SessionBooking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [ratingSession, setRatingSession] = useState<SessionBooking | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -282,7 +284,23 @@ export default function MySessionsPage() {
                           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> 
                           Message
                         </button>
+                        {/* Rate Session — student only, one time */}
+                        {!isMentor && !session.ratingSubmitted && (
+                          <button
+                            onClick={() => setRatingSession(session)}
+                            className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-bold transition-all hover:-translate-y-0.5 border"
+                            style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.08), rgba(221,183,255,0.08))', borderColor: 'rgba(251,191,36,0.25)', color: '#fbbf24' }}
+                          >
+                            <Star className="w-4 h-4" /> Rate this session
+                          </button>
+                        )}
+                        {!isMentor && session.ratingSubmitted && (
+                          <div className="w-full flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-[12px] font-bold text-[#8899b8]" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" /> Rated
+                          </div>
+                        )}
                       </div>
+
                     )}
                   </div>
                 </div>
@@ -290,6 +308,23 @@ export default function MySessionsPage() {
             );
           })}
         </div>
+      )}
+
+      {/* Rating Modal */}
+      {ratingSession && user && (
+        <RateSessionModal
+          sessionId={ratingSession.id}
+          mentorId={ratingSession.mentorId}
+          mentorName={ratingSession.mentorName}
+          studentId={user.uid}
+          onClose={() => setRatingSession(null)}
+          onSuccess={() => {
+            setRatingSession(null);
+            setSessions(prev =>
+              prev.map(s => s.id === ratingSession.id ? { ...s, ratingSubmitted: true } : s)
+            );
+          }}
+        />
       )}
     </div>
   );

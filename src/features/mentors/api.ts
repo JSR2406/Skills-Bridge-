@@ -10,11 +10,12 @@ import {
   setDoc,
   updateDoc,
   addDoc,
+  deleteDoc,
   Timestamp,
   serverTimestamp,
   runTransaction,
 } from 'firebase/firestore';
-import { MentorProfile, MentorSlot, SessionBooking } from './types';
+import { MentorProfile, MentorRating, MentorSlot, PendingMentorApplication, SessionBooking } from './types';
 
 // Mentors
 export async function getApprovedMentors(): Promise<MentorProfile[]> {
@@ -326,3 +327,147 @@ export function subscribeToUserSessions(userId: string, callback: (sessions: Ses
     unsub2();
   };
 }
+
+// ── Slot Management (Mentor CRUD) ─────────────────────────────────────────────
+
+/**
+ * Create a new availability slot for a mentor.
+ * meetingLink is auto-generated as a Jitsi room based on the doc ID.
+ */
+export async function addMentorSlot(
+  mentorId: string,
+  startTime: Date,
+  endTime: Date,
+  fee: number,
+): Promise<string> {
+  const ref = await addDoc(collection(db, 'mentorSlots'), {
+    mentorId,
+    startTime: Timestamp.fromDate(startTime),
+    endTime: Timestamp.fromDate(endTime),
+    isBooked: false,
+    meetingType: 'jitsi',
+    meetingLink: '', // patched below once we have the doc ID
+    fee,
+    createdAt: serverTimestamp(),
+  });
+  // Patch meeting link with the real document ID
+  await updateDoc(ref, { meetingLink: `/call/${ref.id}` });
+  return ref.id;
+}
+
+/** Delete an unbooked slot owned by the calling mentor. */
+export async function deleteMentorSlot(slotId: string): Promise<void> {
+  const ref = doc(db, 'mentorSlots', slotId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error('SLOT_NOT_FOUND');
+  if (snap.data().isBooked) throw new Error('SLOT_ALREADY_BOOKED');
+  await deleteDoc(ref);
+}
+
+/** Fetch ALL slots for a mentor (booked + unbooked) — used in the slot manager. */
+export async function getAllMentorSlots(mentorId: string): Promise<MentorSlot[]> {
+  const q = query(
+    collection(db, 'mentorSlots'),
+    where('mentorId', '==', mentorId),
+    orderBy('startTime', 'asc'),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => {
+    const data = d.data();
+    return {
+      id: d.id,
+      ...data,
+      startTime: data.startTime?.toDate() || new Date(),
+      endTime: data.endTime?.toDate() || new Date(),
+      createdAt: data.createdAt?.toDate() || new Date(),
+    } as MentorSlot;
+  });
+}
+
+// ── Session Rating ─────────────────────────────────────────────────────────────
+
+/**
+ * Submit a post-session rating.
+ * Atomically updates the mentor's rolling averageRating + totalRatings
+ * and marks the booking as ratingSubmitted = true.
+ */
+export async function submitMentorRating(
+  sessionId: string,
+  mentorId: string,
+  studentId: string,
+  rating: number,
+  comment: string,
+): Promise<void> {
+  const mentorRef = doc(db, 'mentors', mentorId);
+  const bookingRef = doc(db, 'bookings', sessionId);
+
+  await runTransaction(db, async (t) => {
+    const mentorSnap = await t.get(mentorRef);
+    const bookingSnap = await t.get(bookingRef);
+
+    if (!mentorSnap.exists()) throw new Error('MENTOR_NOT_FOUND');
+    if (!bookingSnap.exists()) throw new Error('SESSION_NOT_FOUND');
+    if (bookingSnap.data().ratingSubmitted) throw new Error('RATING_ALREADY_SUBMITTED');
+
+    const { averageRating = 0, totalRatings = 0 } = mentorSnap.data();
+    const newTotal = totalRatings + 1;
+    const newAvg = parseFloat(
+      ((averageRating * totalRatings + rating) / newTotal).toFixed(2)
+    );
+
+    t.update(mentorRef, { averageRating: newAvg, totalRatings: newTotal, updatedAt: serverTimestamp() });
+    t.update(bookingRef, { ratingSubmitted: true });
+  });
+
+  // Write rating doc (outside transaction — non-critical)
+  await addDoc(collection(db, 'mentorRatings'), {
+    sessionId,
+    mentorId,
+    studentId,
+    rating,
+    comment: comment.trim(),
+    createdAt: serverTimestamp(),
+  } satisfies Omit<MentorRating, 'createdAt'> & { createdAt: ReturnType<typeof serverTimestamp> });
+}
+
+// ── Admin — Mentor Approval ────────────────────────────────────────────────────
+
+/** Fetch all mentor applications pending approval (mentorApproved = false). */
+export async function getPendingMentorApplications(): Promise<PendingMentorApplication[]> {
+  const q = query(
+    collection(db, 'mentors'),
+    where('mentorApproved', '==', false),
+    orderBy('createdAt', 'desc'),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => {
+    const data = d.data();
+    return {
+      userId: d.id,
+      ...data,
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    } as PendingMentorApplication;
+  });
+}
+
+/** Admin: approve a pending mentor application. */
+export async function approveMentorApplication(userId: string): Promise<void> {
+  const mentorRef = doc(db, 'mentors', userId);
+  const userRef = doc(db, 'users', userId);
+  await Promise.all([
+    updateDoc(mentorRef, { mentorApproved: true, updatedAt: serverTimestamp() }),
+    updateDoc(userRef, { role: 'mentor', updatedAt: serverTimestamp() }),
+  ]);
+}
+
+/** Admin: reject (delete) a pending mentor application. */
+export async function rejectMentorApplication(userId: string): Promise<void> {
+  const mentorRef = doc(db, 'mentors', userId);
+  const userRef = doc(db, 'users', userId);
+  await Promise.all([
+    deleteDoc(mentorRef),
+    updateDoc(userRef, { role: 'student', updatedAt: serverTimestamp() }),
+  ]);
+}
+

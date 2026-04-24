@@ -47,4 +47,20 @@ export interface SessionBooking {
   startTime: Timestamp | Date;
   endTime: Timestamp | Date;
   createdAt: Timestamp | Date;
+  /** Set when the student submits a post-session rating */
+  ratingSubmitted?: boolean;
+}
+
+export interface MentorRating {
+  sessionId: string;
+  mentorId: string;
+  studentId: string;
+  rating: number; // 1–5
+  comment: string;
+  createdAt: Timestamp | Date;
+}
+
+/** Mentor document with mentorApproved = false — shown in admin approval tab */
+export interface PendingMentorApplication extends MentorProfile {
+  email?: string;
 }
