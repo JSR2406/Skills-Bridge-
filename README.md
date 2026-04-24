@@ -4,12 +4,12 @@ SkillBridge is a modern ecosystem built for students to bridge the gap between d
 
 **Live Demo**: [https://skillsbridge-jet.vercel.app/](https://skillsbridge-jet.vercel.app/)
 
-**Demo video**:[https://www.loom.com/share/27cff3f0311349f99480fe117ea5e8b5](https://www.loom.com/share/27cff3f0311349f99480fe117ea5e8b5)
+**Demo video**: [https://www.loom.com/share/27cff3f0311349f99480fe117ea5e8b5](https://www.loom.com/share/27cff3f0311349f99480fe117ea5e8b5)
 
 
 ## ✨ Key Features
 
-### 🧠 AI Productivity & Study Module (NEW) 🚀
+### 🧠 AI Productivity & Study Module
 - **AI Study Plan Generator**: Analyzes your recent activities (Doubt history, Test scores, Mentor sessions) to generate custom 24-hour study priorities.
 - **Smart Task Management**: Integrated scheduler that allows you to "Quick Add" follow-up tasks directly from AI answers or mentor slots.
 - **Progress Tracking**: Real-time stats on tasks completed and subjects mastered.
@@ -20,45 +20,81 @@ SkillBridge is a modern ecosystem built for students to bridge the gap between d
 - **Verified Answers**: Authors can mark "Accepted" answers, awarding reputation to contributors.
 
 ### 🤝 Expert Mentorship + Smart Matching
-- **Smart Mentor Recommendations**: Heuristic engine ranks mentors using 5 signals — Topic Match (40 pts from weak subjects/doubts), Rating (25 pts), Availability (20 pts), Novelty (10 pts), Budget fit (5 pts). Score shown as X/100 per mentor card with a "Why recommended?" breakdown.
+- **Smart Mentor Recommendations**: Heuristic engine ranks mentors using 5 signals — Topic Match (40 pts), Rating (25 pts), Availability (20 pts), Novelty (10 pts), Budget fit (5 pts). Score shown as X/100 with a "Why recommended?" breakdown per card.
 - **Race-Condition-Safe Booking**: Slot booking uses Firestore `runTransaction` — two students cannot claim the same slot simultaneously.
-- **Direct Consultations**: Real-time messaging and video sessions with peer experts.
-- **WebRTC Integration**: Seamless in-app calls using Jitsi Meet.
-- **Mentor Reputation**: Mentors build trust through feedback and successfully resolved doubts.
+- **Mentor Slot Manager** *(new)*: Mentors manage their own availability from `/mentor-slots` — add time slots with date, time, and fee; view upcoming/booked/expired slots; delete unbooked slots in one click.
+- **Post-Session Rating Flow** *(new)*: After a session ends, students rate their mentor (1–5 stars + comment). Rating atomically updates the mentor's rolling `averageRating` via Firestore transaction and is idempotent — once submitted, the button changes to a "Rated" badge.
+- **Direct Consultations**: Real-time messaging and video sessions with peer experts via Jitsi Meet.
 - **Idempotent Session Reminders**: Cron-based reminders (30 min + 5 min before sessions) use atomic flag writes to guarantee at-most-once delivery.
+
+### 🛡️ Admin Dashboard
+- **Analytics**: Platform-wide stats — total users, solved doubts, active mentors, and test attempts.
+- **User Management**: Role assignment (student / mentor / admin) for any user.
+- **Content Moderation**: Browse and delete community doubts from the feed.
+- **Mentor Approval Tab** *(new)*: Admins review pending mentor applications with full profile details (headline, college, subjects, fee). One-click **Approve** (makes the mentor live) or **Reject** (deletes the application). Live badge on the tab shows the number of pending applications.
 
 ### 🏆 Gamification Engine
 - **Reputation Points**: Earn points for answering, completing tests, and following your study plan.
 - **Premium Badges**: Unlockable achievements (e.g., "Novice Solver", "Productivity Pro") with animated unlock ceremonies.
 - **Leaderboards**: Subject-specific leaderboards to showcase top contributors.
 
+---
+
 ## 🛠 Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
-- **Backend / DB / Auth**: Firebase (Firestore, Authentication, Storage)
-- **AI Engine**: OpenRouter (Gemini 2.0 Flash)
-- **Animations**: Framer Motion
-- **Styling**: Vanilla CSS (Modern Glassmorphism Design System)
-- **Deployment**: Vercel
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 14 (App Router) |
+| Language | TypeScript |
+| Backend / DB / Auth | Firebase (Firestore, Authentication, Storage) |
+| AI Engine | OpenRouter (Gemini 2.0 Flash) |
+| Animations | Framer Motion |
+| Styling | Vanilla CSS (Glassmorphism Design System) |
+| Payments | Razorpay |
+| Deployment | Vercel |
 
 ## 📂 Project Structure
 
 ```bash
 src/
 ├── app/               # Next.js Routes & App Logic
+│   ├── (app)/         # Protected app pages
+│   │   ├── mentors/       # Mentor directory + smart ranking
+│   │   ├── mentor-slots/  # Mentor availability manager (new)
+│   │   ├── sessions/      # My sessions + rating flow (new)
+│   │   └── admin/         # Admin dashboard + mentor approvals (new)
+│   └── api/           # Backend API routes (AI, payments, cron)
 ├── components/        # Reusable UI & Layout Components
-├── features/          # Domain-driven Modules (Auth, Doubts, Mentors, Productivity)
+├── features/          # Domain-driven Modules
+│   └── mentors/
+│       ├── api.ts           # Slot CRUD, rating, approval APIs (new)
+│       ├── recommendation/  # Heuristic scoring engine
+│       └── components/
+│           └── RateSessionModal.tsx  # Post-session rating modal (new)
 ├── lib/               # Shared Utilities & Firebase Config
 └── styles/            # Core CSS & Design Tokens
 ```
 
 ## 🏁 How to Judge / Test
 
-1. **Sign Up / Login**: Use the "Demo Student" login or create a new account to see the **Multi-Step Onboarding**.
-2. **Post a Doubt**: Go to "Ask Doubt" and type a question to see the AI analysis in action.
-3. **Optimize Study**: Use the "Productivity" tab to generate your first AI Study Plan based on your interests.
-4. **Complete Goals**: Complete a task to see the Reputation and Badge system respond.
+1. **Sign Up / Login**: Use the demo accounts below or create a new account.
+2. **Post a Doubt**: Go to "Ask Doubt" — see AI first-response in action.
+3. **Browse Mentors**: View ranked mentor cards with match scores and "Why recommended?" breakdowns.
+4. **Book a Session**: Pick a mentor slot — the booking is race-condition safe.
+5. **Rate a Session**: After a session completes, the "Rate this session" button appears for the student.
+6. **Mentor Onboarding**: Apply as a mentor → auto-redirected to "My Slots" to add availability.
+7. **Admin Controls**: Login as admin → see the Mentors tab with pending approval queue.
+8. **Productivity**: Generate an AI study plan based on your doubt and test history.
+
+### 🔑 Demo Credentials
+
+| Role | Email | Password |
+|---|---|---|
+| Student | `demo.student@skillsbridge.app` | `Demo@1234` |
+| Mentor | `demo.mentor@skillsbridge.app` | `Demo@1234` |
+| Admin | `demo.admin@skillsbridge.app` | `Admin@1234` |
+
+> Run the `/seed` page after login to populate demo mentors and doubt feed if the database is empty.
 
 ---
 
