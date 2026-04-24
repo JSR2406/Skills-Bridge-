@@ -218,18 +218,6 @@ export async function bookSlotTransaction(
   return newBookingRef.id;
 }
 
-/** @deprecated Use bookSlotTransaction for race-condition safety */
-export async function createSessionBooking(
-  slot: MentorSlot,
-  mentor: MentorProfile,
-  studentId: string,
-  studentName: string,
-  razorpayOrderId: string
-): Promise<string> {
-  console.warn('createSessionBooking is deprecated — use bookSlotTransaction instead.');
-  return bookSlotTransaction(slot, mentor, studentId, studentName, razorpayOrderId);
-}
-
 export async function confirmBookingPayment(
   bookingId: string, 
   razorpayPaymentId: string
