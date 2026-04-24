@@ -27,6 +27,8 @@ export interface UserProfile {
   testAttemptsCount: number;
   badges: string[];
   mentorApproved: boolean;
+  /** Optional INR ceiling for mentor session fees — used by recommendation scorer */
+  budgetCeiling?: number;
   createdAt: any; // Firestore Timestamp
   updatedAt: any; // Firestore Timestamp
 }

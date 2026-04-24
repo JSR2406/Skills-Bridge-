@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { getMentorProfile, getMentorSlots, createSessionBooking, confirmBookingPayment } from '@/features/mentors/api';
+import { getMentorProfile, getMentorSlots, bookSlotTransaction, confirmBookingPayment } from '@/features/mentors/api';
 import { MentorProfile, MentorSlot } from '@/features/mentors/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,14 +85,29 @@ export default function MentorProfilePage() {
             
             const verifyData = await verifyRes.json();
             if (verifyData.verified) {
-              // Create booking doc
-              const bookingId = await createSessionBooking(
-                slot, mentor, user.uid, profile.name, response.razorpay_order_id
-              );
-              await confirmBookingPayment(bookingId, response.razorpay_payment_id);
-              
-              toast.success('Session booked successfully!');
-              router.push('/sessions');
+              try {
+                // Atomically claim slot + create booking (race-condition safe)
+                const bookingId = await bookSlotTransaction(
+                  slot, mentor, user.uid, profile.name, response.razorpay_order_id
+                );
+                await confirmBookingPayment(bookingId, response.razorpay_payment_id);
+                toast.success('Session booked successfully!');
+                router.push('/sessions');
+              } catch (bookingErr: any) {
+                if (bookingErr.message === 'SLOT_ALREADY_BOOKED') {
+                  // Another student claimed this slot between payment and booking
+                  // Refresh slots so the UI shows current availability
+                  toast.error('This slot was just taken by someone else — please choose another time.');
+                  const freshSlots = await getMentorSlots(mentor.userId);
+                  setSlots(freshSlots);
+                } else if (bookingErr.message === 'SLOT_NOT_FOUND') {
+                  toast.error('This slot no longer exists. The mentor may have removed it.');
+                  const freshSlots = await getMentorSlots(mentor.userId);
+                  setSlots(freshSlots);
+                } else {
+                  toast.error('Booking failed: ' + bookingErr.message);
+                }
+              }
             } else {
               toast.error('Payment verification failed');
             }

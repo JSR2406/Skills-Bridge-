@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Save, UserCircle, Link as LinkIcon, AlertCircle } from 'lucide-react';
+import { Save, UserCircle, Link as LinkIcon, AlertCircle, Wallet } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 
 export default function SettingsPage() {
@@ -25,7 +25,8 @@ export default function SettingsPage() {
     semester: '',
     github: '',
     linkedin: '',
-    portfolio: ''
+    portfolio: '',
+    budgetCeiling: '',
   });
 
   useEffect(() => {
@@ -39,7 +40,8 @@ export default function SettingsPage() {
         semester: profile.semester ? profile.semester.toString() : '',
         github: profile.socialLinks?.github || '',
         linkedin: profile.socialLinks?.linkedin || '',
-        portfolio: profile.socialLinks?.portfolio || ''
+        portfolio: profile.socialLinks?.portfolio || '',
+        budgetCeiling: profile.budgetCeiling ? profile.budgetCeiling.toString() : '',
       });
     }
   }, [profile]);
@@ -59,6 +61,11 @@ export default function SettingsPage() {
         'socialLinks.github': formData.github,
         'socialLinks.linkedin': formData.linkedin,
         'socialLinks.portfolio': formData.portfolio,
+        // budgetCeiling: 0 means no limit (delete the field), otherwise store as number
+        ...(formData.budgetCeiling
+          ? { budgetCeiling: parseInt(formData.budgetCeiling, 10) }
+          : { budgetCeiling: null }
+        ),
         updatedAt: serverTimestamp()
       });
       toast.success('Profile updated successfully!');
@@ -188,6 +195,36 @@ export default function SettingsPage() {
              </CardContent>
           </Card>
           
+          <Card className="bg-surface-card border-border shadow-md">
+             <CardHeader>
+               <CardTitle className="flex items-center gap-2"><Wallet className="w-5 h-5 text-[#4fdbc8]" /> Budget Preferences</CardTitle>
+               <CardDescription>
+                 Setting a budget ceiling lets the recommendation engine prioritise mentors within your price range.
+               </CardDescription>
+             </CardHeader>
+             <CardContent className="space-y-4">
+               <div>
+                 <Label htmlFor="budgetCeiling">Max Session Fee (₹ INR)</Label>
+                 <div className="relative mt-1.5">
+                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">₹</span>
+                   <Input
+                     id="budgetCeiling"
+                     type="number"
+                     min="0"
+                     step="50"
+                     placeholder="e.g. 500 — leave blank for no limit"
+                     value={formData.budgetCeiling}
+                     onChange={e => setFormData({ ...formData, budgetCeiling: e.target.value })}
+                     className="pl-7 bg-background border-border/50"
+                   />
+                 </div>
+                 <p className="text-xs text-muted-foreground mt-1.5">
+                   Mentors above this amount will appear lower in your personalised recommendations. Leave blank to disable.
+                 </p>
+               </div>
+             </CardContent>
+          </Card>
+
           <div className="flex items-center justify-end">
             <Button onClick={handleSave} disabled={loading} size="lg" className="w-full md:w-auto bg-brand-500 hover:bg-brand-600 text-brand-950 font-bold px-8 shadow-[0_0_20px_rgba(79,219,200,0.3)] hover:shadow-[0_0_24px_rgba(79,219,200,0.5)] transition-all">
               {loading ? 'Saving...' : (

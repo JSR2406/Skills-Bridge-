@@ -11,7 +11,8 @@ import {
   updateDoc,
   addDoc,
   Timestamp,
-  serverTimestamp
+  serverTimestamp,
+  runTransaction,
 } from 'firebase/firestore';
 import { MentorProfile, MentorSlot, SessionBooking } from './types';
 
@@ -139,6 +140,85 @@ export function subscribeToMentorSlots(mentorId: string, callback: (slots: Mento
 }
 
 // Bookings
+
+/**
+ * Atomically books a mentor slot using a Firestore transaction.
+ *
+ * Race Condition Handling
+ * ───────────────────────
+ * The previous implementation (addDoc + updateDoc) had a TOCTOU race:
+ * two students could both read isBooked=false simultaneously and both
+ * produce bookings for the same slot.
+ *
+ * This function wraps the entire operation in runTransaction(), which uses
+ * Firestore's optimistic concurrency model:
+ *   1. We read the slot document INSIDE the transaction.
+ *   2. If isBooked is already true → throw SLOT_ALREADY_BOOKED immediately.
+ *   3. Otherwise, we queue a set() on the new booking doc and an update()
+ *      on the slot doc — both committed atomically.
+ *   4. If another writer modified the slot between our get() and commit(),
+ *      Firestore retries the transaction up to 5 times before throwing.
+ *
+ * The booking document ID is pre-allocated via doc(collection) so we can
+ * return it from inside the transaction without a second read.
+ *
+ * Note: serverTimestamp() cannot be used inside transactions — Timestamp.now()
+ * is used instead (close enough for a booking record, and avoids the SDK error).
+ *
+ * @throws 'SLOT_ALREADY_BOOKED' — catch this in the UI and prompt slot selection
+ * @throws 'SLOT_NOT_FOUND'       — slot document deleted before booking completed
+ */
+export async function bookSlotTransaction(
+  slot: MentorSlot,
+  mentor: MentorProfile,
+  studentId: string,
+  studentName: string,
+  razorpayOrderId: string,
+): Promise<string> {
+  const slotRef = doc(db, 'mentorSlots', slot.id);
+  // Pre-allocate the booking document ID so we can return it from inside the transaction
+  const newBookingRef = doc(collection(db, 'bookings'));
+
+  await runTransaction(db, async (transaction) => {
+    // ── Step 1: Read slot state inside the transaction ──────────────────────
+    const slotSnap = await transaction.get(slotRef);
+
+    if (!slotSnap.exists()) {
+      throw new Error('SLOT_NOT_FOUND');
+    }
+    if (slotSnap.data().isBooked === true) {
+      // Another student claimed this slot — fail fast and let UI handle it
+      throw new Error('SLOT_ALREADY_BOOKED');
+    }
+
+    // ── Step 2: Build booking payload ──────────────────────────────────────
+    const bookingData: Omit<SessionBooking, 'id'> = {
+      slotId:        slot.id,
+      mentorId:      mentor.userId,
+      mentorName:    mentor.name,
+      mentorAvatar:  mentor.avatarUrl,
+      studentId,
+      studentName,
+      amount:        slot.fee,
+      paymentStatus: 'pending',
+      razorpayOrderId,
+      bookingStatus: 'confirmed',
+      meetingLink:   `/call/${slot.id}`,
+      startTime:     slot.startTime,
+      endTime:       slot.endTime,
+      // serverTimestamp() not allowed inside transactions — use Timestamp.now()
+      createdAt:     Timestamp.now(),
+    };
+
+    // ── Step 3: Atomic writes — both land or both roll back ─────────────────
+    transaction.set(newBookingRef, bookingData);
+    transaction.update(slotRef, { isBooked: true });
+  });
+
+  return newBookingRef.id;
+}
+
+/** @deprecated Use bookSlotTransaction for race-condition safety */
 export async function createSessionBooking(
   slot: MentorSlot,
   mentor: MentorProfile,
@@ -146,32 +226,8 @@ export async function createSessionBooking(
   studentName: string,
   razorpayOrderId: string
 ): Promise<string> {
-  const bookingData: Omit<SessionBooking, 'id'> = {
-    slotId: slot.id,
-    mentorId: mentor.userId,
-    mentorName: mentor.name,
-    mentorAvatar: mentor.avatarUrl,
-    studentId,
-    studentName,
-    amount: slot.fee,
-    paymentStatus: 'pending',
-    razorpayOrderId,
-    bookingStatus: 'confirmed',
-    meetingLink: `/call?session=${slot.id}`,   // in-app call page
-    startTime: slot.startTime,
-    endTime: slot.endTime,
-    createdAt: serverTimestamp() as any,
-  };
-
-  // Create booking
-  const bookingRef = await addDoc(collection(db, 'bookings'), bookingData);
-  
-  // Mark slot as booked
-  await updateDoc(doc(db, 'mentorSlots', slot.id), {
-    isBooked: true
-  });
-  
-  return bookingRef.id;
+  console.warn('createSessionBooking is deprecated — use bookSlotTransaction instead.');
+  return bookSlotTransaction(slot, mentor, studentId, studentName, razorpayOrderId);
 }
 
 export async function confirmBookingPayment(
