@@ -1,3 +1,5 @@
+// ── SHARED: AwardBadgeToast
+// Celebration toast rendered by BadgeManager when the user earns a new badge.
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';

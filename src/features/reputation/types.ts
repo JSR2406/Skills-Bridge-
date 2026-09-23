@@ -1,3 +1,6 @@
+// ── FEATURE: Reputation — Domain types
+// Types the gamification layer: reputation events, the points map, badge
+// definitions, and the user stats read for badge qualification.
 import { Timestamp } from 'firebase/firestore';
 
 export type ReputationEventType = 

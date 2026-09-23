@@ -1,3 +1,6 @@
+// ── APP GROUP LAYOUT (authenticated shell)
+// Client guard wrapping all `(app)` pages: redirects to /login when unauthenticated,
+// wires the push-subscription hook, and renders AppShell (+ onboarding gate).
 'use client';
 
 import { AppShell } from '@/components/layout/AppShell';

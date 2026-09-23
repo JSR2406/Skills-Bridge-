@@ -1,3 +1,6 @@
+// ── FEATURE: Auth — useAuth hook
+// Thin wrapper around the auth store; lets any component read user/profile
+// without importing the store directly.
 import { useAuthStore } from '../store';
 
 export function useAuth() {

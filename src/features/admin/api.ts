@@ -1,3 +1,6 @@
+// ── FEATURE: Admin — API (client)
+// Admin-dashboard data calls: list/update users, promote mentors, moderate
+// doubts, and a demo platform-stats summary.
 import { db } from '@/lib/firebase/config';
 import { 
   collection, 

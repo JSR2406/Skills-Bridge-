@@ -1,3 +1,6 @@
+// ── API: POST /api/razorpay/verify
+// Server-side HMAC-SHA256 verification of the Razorpay payment signature so the
+// client cannot fake a successful payment.
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 

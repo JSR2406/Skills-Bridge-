@@ -1,3 +1,6 @@
+// ── ROOT LAYOUT
+// Global head/fonts/styles, AuthProvider (Firebase auth watcher), and the
+// sonner toast mount. Everything on the site renders through here.
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";

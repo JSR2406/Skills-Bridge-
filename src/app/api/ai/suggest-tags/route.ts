@@ -1,3 +1,6 @@
+// ── API: POST /api/ai/suggest-tags
+// Suggests up to 5 subject/topic tags for a doubt description so students post
+// well-categorized questions.
 import { NextResponse } from 'next/server';
 
 const apiKey = process.env.OPENROUTER_API_KEY || '';

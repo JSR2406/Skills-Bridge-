@@ -1,3 +1,6 @@
+// ── LAYOUT: TopHeader
+// Global top bar: search overlay, notification bell (realtime subscription),
+// reputation/streak chips, pending sessions counter, and profile menu.
 'use client';
 
 import { useEffect, useState, useRef } from 'react';

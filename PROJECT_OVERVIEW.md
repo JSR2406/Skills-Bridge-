@@ -6,14 +6,18 @@ SkillBridge is a modern, peer-to-peer AI learning platform designed to bridge th
 ## 2. Technical Stack
 SkillBridge leverages a cutting-edge front-end and a responsive serverless back-end.
 
-*   **Framework**: Next.js 14+ (App Router)
+> 📘 See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for the full module map, Firestore
+> data model, data-flow diagrams, and API route reference.
+
+*   **Framework**: Next.js 16+ (App Router), React 19
 *   **Language**: TypeScript (Strict mode)
 *   **Database & Backend (BaaS)**: Firebase (Firestore for NoSQL DB, Authentication, Storage)
 *   **AI Engine**: OpenRouter API (Leveraging models like Gemini 2.0 Flash / Pro)
-*   **UI & State**: React 19, Zustand (for global state)
-*   **Animations & Styling**: Framer Motion, Vanilla CSS (Modern Glassmorphism), Tailwind CSS v4, Shadcn/Radix UI components.
+*   **UI & State**: Zustand (global state), Tailwind CSS v4, shadcn-style components on Base UI, lucide-react icons
+*   **Animations & Styling**: Framer Motion, Glassmorphism design system
 *   **Real-time Communication**: Jitsi Meet (WebRTC for video calling), Firestore (Real-time syncing for chat)
-*   **Deployment**: Vercel (Edge network, CI/CD)
+*   **Payments**: Razorpay
+*   **Deployment**: Vercel (Edge network, CI/CD, cron jobs)
 
 ## 3. High-Level Architecture
 The architecture follows a modular, feature-oriented design within a Next.js Monolithic structure:

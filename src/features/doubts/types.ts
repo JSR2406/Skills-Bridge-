@@ -1,3 +1,6 @@
+// ── FEATURE: Doubts — Domain types
+// `Doubt` (posts collection), `Answer` (answers subcollection), and the AI
+// explanation payload shaped by the `api/ai/doubt` route.
 import { Timestamp } from 'firebase/firestore';
 
 export interface Doubt {

@@ -1,3 +1,6 @@
+// ── API: POST /api/notifications/send
+// Writes a notification doc for a user; optionally delivers a web push via
+// `web-push` (dynamically imported) using the user's stored subscription.
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/config';
 import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';

@@ -1,3 +1,6 @@
+// ── FEATURE: Productivity — Domain types
+// `Task` (tasks collection) and the AI study-plan payloads returned by
+// `api/productivity/generate` (summary, focusAreas, study blocks, follow-ups).
 import { Timestamp } from 'firebase/firestore';
 
 export type TaskType = 'study' | 'revision' | 'follow-up' | 'exam-prep' | 'custom';

@@ -1,5 +1,8 @@
 'use client';
 
+// ── FEATURE: Mentor Core — RateSessionModal
+// Post-session rating + review. Submits via `submitMentorRating` and updates the
+// mentor's aggregate averageRating/totalRatings.
 import { useState } from 'react';
 import { Star, Loader2, X } from 'lucide-react';
 import { submitMentorRating } from '@/features/mentors/api';

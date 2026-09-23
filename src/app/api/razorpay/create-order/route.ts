@@ -1,3 +1,6 @@
+// ── API: POST /api/razorpay/create-order
+// Creates a Razorpay order (amount in paise) for mentoring payments and returns
+// the order payload to the client-side checkout.
 import { NextResponse } from 'next/server';
 import { getRazorpayClient } from '@/lib/razorpay/client';
 

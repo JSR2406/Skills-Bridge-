@@ -1,3 +1,6 @@
+// ── FEATURE: Doubts — AIExplanationDisplay
+// Server component rendering the DOUBT_AI flow's explanation stream: structured
+// sections (approach, steps), a copy-to-notes action, and pitch-deck generation.
 import React from 'react';
 import { AIExplanation } from '../types';
 import { Bot, CheckCircle2, AlertCircle, Bookmark, Lightbulb, ArrowRight } from 'lucide-react';

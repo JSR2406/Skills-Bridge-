@@ -1,3 +1,6 @@
+// ── LIB: Razorpay — server client
+// Lazily-instantiated Razorpay SDK backed by RAZORPAY_KEY_ID/SECRET env vars.
+// Used by the create-order/verify API routes.
 import Razorpay from 'razorpay';
 
 export const getRazorpayClient = () => {

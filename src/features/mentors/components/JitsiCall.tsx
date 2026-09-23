@@ -1,5 +1,8 @@
 'use client';
 
+// ── FEATURE: Mentor Core — JitsiCall
+// External-video overlay: boots a Jitsi Meet iframe for a room id, shows
+// connecting/active states, and fires onEnded when the call finishes.
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, Video, PhoneOff, AlertTriangle } from 'lucide-react';
 

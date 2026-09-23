@@ -1,3 +1,6 @@
+// ── FEATURE: Mentor Core — Domain types
+// `MentorProfile` mirrors the `mentors` Firestore doc; `MentorSlot` and
+// `SessionBooking` back the mentor availability & session-management flows.
 import { Timestamp } from 'firebase/firestore';
 
 export interface MentorProfile {

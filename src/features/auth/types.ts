@@ -1,3 +1,6 @@
+// ── FEATURE: Auth
+// Types for the authenticated user. `UserProfile` mirrors the `users` Firestore doc
+// (auth object holds credentials; profile holds role, karma, streak, etc.).
 import { User } from 'firebase/auth';
 
 export type UserRole = 'student' | 'mentor' | 'admin';

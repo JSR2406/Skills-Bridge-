@@ -1,4 +1,7 @@
 import { collection, doc, query, orderBy, limit, addDoc, updateDoc, serverTimestamp, getDocs, getDoc, runTransaction, DocumentSnapshot, Timestamp } from 'firebase/firestore';
+// ── FEATURE: Doubts — API (client)
+// Firestore CRUD + realtime subscriptions for doubts: post, vote, resolve,
+// subscribeToDoubts, and the admin delete used by the dashboard.
 import { db } from '@/lib/firebase/config';
 import { Doubt, CreateDoubtInput } from '../types';
 

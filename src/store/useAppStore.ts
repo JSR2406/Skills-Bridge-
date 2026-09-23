@@ -1,3 +1,6 @@
+// ── STORE: useAppStore (Zustand)
+// Global non-auth UI state: seeded demo-mode flag, onboarding profile draft,
+// and session bookkeeping (scheduled + cancelled counts) shown in the header.
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 

@@ -1,3 +1,6 @@
+// ── ROOT PAGE
+// No landing page yet — root redirects straight to `/login`; authenticated
+// users are routed onward client-side via the middleware/login logic.
 import { redirect } from 'next/navigation';
 
 export default function RootPage() {

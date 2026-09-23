@@ -1,3 +1,6 @@
+// ── FEATURE: Tests — Domain types
+// `Question`/`PracticeTest` (tests collection) and `TestAttempt` (testAttempts
+// collection) backing the AI-generated practice tests and scoring UI.
 import { Timestamp } from 'firebase/firestore';
 
 export interface Question {

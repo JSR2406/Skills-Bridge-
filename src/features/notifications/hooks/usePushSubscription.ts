@@ -1,5 +1,8 @@
 'use client';
 
+// ── FEATURE: Notifications — usePushSubscription
+// Registers the service worker (`/sw.js`) and stores the push subscription on
+// `users/{uid}/pushSubscriptions/main`, enabling web-push session reminders.
 import { useEffect } from 'react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';

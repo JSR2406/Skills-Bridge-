@@ -1,3 +1,6 @@
+// ── AUTH GROUP: Register page
+// MVP: registration is the same flow as login (Google OAuth), so this just
+// renders the login page. Expand into a real form if email/password is added.
 import LoginPage from '@/app/(auth)/login/page';
 
 export default function RegisterPage() {

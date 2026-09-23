@@ -1,3 +1,6 @@
+// ── LIB: Firebase bootstrap
+// Initializes the single SDK instance from NEXT_PUBLIC_* env vars and exports
+// the shared `db`, `auth`, and `storage` handles used across the client.
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { initializeFirestore, getFirestore } from "firebase/firestore";

@@ -12,6 +12,8 @@ import {
   Timestamp,
   getDoc,
 } from 'firebase/firestore';
+// ── FEATURE: Doubts — Answers API (client)
+// Firestore client for the `answers` subcollection: post, vote, accept-as-correct.
 import { db } from '@/lib/firebase/config';
 import { awardPoints } from '../../reputation/api';
 

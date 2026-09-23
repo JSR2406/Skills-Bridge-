@@ -1,3 +1,6 @@
+// ── FEATURE: Auth — AuthProvider
+// Mounted once in the root layout. Listens to Firebase `onAuthStateChanged`,
+// hydrates the auth store, then fires the async `fetchProfile` action.
 'use client';
 
 import { useEffect } from 'react';

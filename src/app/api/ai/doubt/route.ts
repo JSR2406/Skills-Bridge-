@@ -1,3 +1,7 @@
+// ── API: POST /api/ai/doubt
+// DOUBT_AI core: solves a doubt with OpenRouter (structured: approach → steps →
+// formula → mistakes → code), generates a Mermaid diagram, optional "pitch deck"
+// summary, and prevents auto-duplicate requests.
 import { NextResponse } from 'next/server';
 
 const apiKey = process.env.OPENROUTER_API_KEY || '';

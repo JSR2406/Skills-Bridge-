@@ -1,3 +1,6 @@
+// ── SHARED: LoadingSkeleton
+// Placeholder card grid shown while Firestore data streams in (used by
+// features/mentors and the mentors directory listing).
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function LoadingSkeleton() {

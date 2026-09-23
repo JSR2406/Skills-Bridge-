@@ -19,16 +19,28 @@
  *   FC-04 student_002 no weak topics, no doubts → sorted by rating only
  */
 
-import { initializeApp, cert } from 'firebase-admin/app';
+import { initializeApp, applicationDefault, cert } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 // Guard: must target emulator unless ALLOW_PRODUCTION_SEED=true
-if (process.env.ALLOW_PRODUCTION_SEED !== 'true') {
-  process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
+// IMPORTANT: emulator env vars MUST be set before initializeApp() is called.
+const isEmulator = process.env.ALLOW_PRODUCTION_SEED !== 'true';
+if (isEmulator) {
+  process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST ?? 'localhost:8080';
 }
 
-initializeApp();
-const db = getFirestore();
+// Initialize the Admin SDK.
+// - In emulator mode: no real credentials needed, so we use applicationDefault()
+//   which will be ignored by the emulator. The env var above is what matters.
+// - In production mode: set GOOGLE_APPLICATION_CREDENTIALS to your service-account
+//   JSON path, or pass cert(require('./service-account.json')) explicitly.
+const app = initializeApp(
+  isEmulator
+    ? { projectId: process.env.GCLOUD_PROJECT ?? 'skillsbridge-demo' }
+    : { credential: applicationDefault() }
+);
+
+const db = getFirestore(app);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

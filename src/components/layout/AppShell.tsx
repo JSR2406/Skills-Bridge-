@@ -1,3 +1,6 @@
+// ── LAYOUT: AppShell
+// Main authenticated shell: desktop sidebar + mobile nav + top header, wrapped
+// in the login-gate guard. Every `(app)` route renders inside this.
 'use client';
 
 import { Sidebar } from './Sidebar';

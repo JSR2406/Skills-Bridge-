@@ -1,3 +1,8 @@
+// ── LIB: Badges registry
+// Single source of truth for the badge catalog shown across the UI (novice →
+// master, streaks, top answerer). BadgeManager evaluates these after each
+// stats change. NOTE: self-contained `Badge` type, separate from
+// `features/reputation/types` used by the points ledger.
 export interface Badge {
   id: string;
   name: string;

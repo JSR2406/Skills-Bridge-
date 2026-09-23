@@ -1,3 +1,5 @@
+// ── LAYOUT: MobileNav
+// Bottom tab bar for small screens — mirrors the sidebar's five top routes.
 'use client';
 
 import Link from 'next/link';

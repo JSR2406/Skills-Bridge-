@@ -1,3 +1,6 @@
+// ── FEATURE: Auth — Zustand store
+// Global auth state (user, userProfile, loading flags, fcm/scheduled counters).
+// Persists to localStorage so a refresh keeps the session.
 import { create } from 'zustand';
 import { AuthState, UserProfile } from './types';
 import { User } from 'firebase/auth';

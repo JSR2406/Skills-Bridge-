@@ -1,5 +1,8 @@
 'use client';
 
+// ── FEATURE: Reputation — BadgeManager
+// Watches the user's live stats and fires `AwardBadgeToast` whenever a new
+// badge condition from `lib/badges.ts` is met (client-side award for MVP).
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { BADGES } from '@/lib/badges';

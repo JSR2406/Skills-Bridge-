@@ -1,5 +1,8 @@
 'use client';
 
+// ── FEATURE: Doubts — DiagramViewer
+// Fetches an AI-generated Mermaid diagram (`api/ai/diagram`) for a doubt and
+// renders it client-side. Used by the Dobot-generated answer UI.
 import { useState, useEffect, useRef } from 'react';
 import { GitBranch, Loader2, AlertCircle, Sparkles, X } from 'lucide-react';
 

@@ -1,3 +1,7 @@
+// ── SEED PAGE
+// Client-side demo/database seeder: creates a demo student + real mentors and
+// floods doubts/tasks/achievements so the UI has data on first run. Not for
+// production use — see `src/scripts/seed/*` for the CLI seeding path.
 'use client';
 
 import { useState } from 'react';

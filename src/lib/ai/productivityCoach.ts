@@ -1,3 +1,7 @@
+// ── LIB: AI — productivityCoach
+// Server-side Productivity Coach: builds a study-plan prompt from the user's
+// profile, recent doubts/test attempts, and sessions, then parses the JSON
+// plan out of the OpenRouter response (COACH_PROMPT is the full system prompt).
 import { AIStudyPlan } from '@/features/productivity/types';
 
 export const COACH_PROMPT = `

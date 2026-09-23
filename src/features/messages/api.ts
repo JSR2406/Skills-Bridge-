@@ -1,3 +1,6 @@
+// ── FEATURE: Messages — API (client)
+// Firestore client for 1:1 DMs. Conversations are stored flat with a
+// deterministic `sortedUids_joined` id; messages live in a subcollection.
 import {
   collection,
   doc,

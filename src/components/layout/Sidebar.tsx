@@ -1,3 +1,7 @@
+// ── LAYOUT: Sidebar
+// Desktop-only left navigation. Groups all app routes (home, doubts, mentors,
+// messages, tests, productivity, sessions, admin) with a "Sonar" glow on the
+// active item.
 'use client';
 
 import Link from 'next/link';

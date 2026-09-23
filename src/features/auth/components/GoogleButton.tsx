@@ -1,5 +1,8 @@
 'use client';
 
+// ── FEATURE: Auth — GoogleButton
+// Google OAuth sign-in via popup. Creates the Firebase user, fetches the
+// profile (creating one if missing), and redirects to onboarding/dashboard.
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { signInWithPopup } from 'firebase/auth';

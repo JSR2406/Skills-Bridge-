@@ -1,3 +1,6 @@
+// ── FEATURE: Mentor Core — API (client)
+// Firestore client for mentor CRUD, slot creation/booking/cancellation, rating
+// submission, and hash-based participant matching (deterministic video room ids).
 import { db } from '@/lib/firebase/config';
 import { 
   collection, 

@@ -1,3 +1,6 @@
+// ── API: GET /api/cron/session-reminders  (Vercel cron, `0 0 * * *`)
+// Admin-gated daily sweep: finds bookings starting within the next 24h and
+// sends each participant an in-app notification + web push reminder.
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/config';
 import {

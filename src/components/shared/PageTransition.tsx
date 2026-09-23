@@ -1,3 +1,6 @@
+// ── SHARED: PageTransition
+// Framer-motion fade/slide wrapper keyed on pathname, giving the app a smooth
+// cross-page transition ("premium" cubic-bezier ease).
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';

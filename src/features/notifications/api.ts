@@ -1,3 +1,6 @@
+// ── FEATURE: Notifications — API (client)
+// Realtime subscription to the `notifications` collection plus batched
+// read/unread marking for the in-app bell dropdown.
 import { db } from '@/lib/firebase/config';
 import { 
   collection, 

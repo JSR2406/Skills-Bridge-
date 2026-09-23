@@ -1,5 +1,8 @@
 'use client';
 
+// ── FEATURE: Doubts — DoubtCard
+// Renders a single doubt post with vote controls, answer count, resolve state,
+// and links to view the answer thread.
 import { formatDistanceToNow } from 'date-fns';
 import { Doubt } from '../types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

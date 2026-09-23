@@ -1,3 +1,6 @@
+// ── AUTH GROUP: Login page
+// Email/password sign-in (and Google via GoogleButton). Also handles the
+// post-Google redirect with useSearchParams, and routes logged-in users away.
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';

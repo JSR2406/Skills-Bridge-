@@ -1,3 +1,7 @@
+// ── API: POST /api/productivity/generate
+// Productivity Coach endpoint: aggregates the user's live context (profile,
+// doubts, attempts, sessions, tasks), calls the coach, and stores the result
+// in `aiProductivityLogs` (today/week timeframe).
 import { NextResponse } from 'next/server';
 import { COACH_PROMPT } from '@/lib/ai/productivityCoach';
 

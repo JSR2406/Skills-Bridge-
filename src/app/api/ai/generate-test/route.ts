@@ -1,3 +1,6 @@
+// ── API: POST /api/ai/generate-test
+// Generates a practice test (5 MCQ with explanations) for a subject/topic via
+// OpenRouter and persists it into the `tests` collection.
 import { NextResponse } from 'next/server';
 
 const apiKey = process.env.OPENROUTER_API_KEY || '';

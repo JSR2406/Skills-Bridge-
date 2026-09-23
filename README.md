@@ -44,14 +44,15 @@ SkillBridge is a modern ecosystem built for students to bridge the gap between d
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript |
+| Framework | Next.js 16 (App Router) + React 19 |
+| Language | TypeScript (strict) |
 | Backend / DB / Auth | Firebase (Firestore, Authentication, Storage) |
 | AI Engine | OpenRouter (Gemini 2.0 Flash) |
-| Animations | Framer Motion |
-| Styling | Vanilla CSS (Glassmorphism Design System) |
+| State / UI | Zustand, Tailwind CSS v4, shadcn-style components on Base UI, Framer Motion |
 | Payments | Razorpay |
-| Deployment | Vercel |
+| Deployment | Vercel (+ cron for session reminders) |
+
+> 📘 **Full architecture reference:** [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — data model, data flows, API routes, and module map.
 
 ## 📂 Project Structure
 
@@ -72,6 +73,8 @@ src/
 │       └── components/
 │           └── RateSessionModal.tsx  # Post-session rating modal (new)
 ├── lib/               # Shared Utilities & Firebase Config
+├── scripts/           # CLI seed tooling (not part of app build)
+├── store/             # Zustand app store
 └── styles/            # Core CSS & Design Tokens
 ```
 

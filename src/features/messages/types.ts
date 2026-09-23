@@ -1,3 +1,6 @@
+// ── FEATURE: Messages — Domain types
+// `Conversation` (conversations collection, one doc per uid pair) and
+// `ChatMessage` (text or call_invite, stored in a subcollection).
 import { Timestamp } from 'firebase/firestore';
 
 export interface ChatMessage {

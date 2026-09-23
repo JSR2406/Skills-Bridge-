@@ -1,3 +1,6 @@
+// ── API: POST /api/ai/diagram
+// Takes a doubt topic, returns a Mermaid `flowchart TD` diagram illustrating
+// the concept (hidden behind the "Generate diagram" button in the AI answer).
 import { NextRequest, NextResponse } from 'next/server';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
