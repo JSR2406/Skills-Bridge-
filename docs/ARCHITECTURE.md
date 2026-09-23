@@ -21,14 +21,15 @@ SkillBridge is a **peer-to-peer AI learning platform** for college students. A s
 | Framework        | **Next.js 16** (App Router, React 19, TypeScript strict)                |
 | UI               | Tailwind CSS v4 (`tw-animate-css`), shadcn-style components on **Base UI**, lucide-react icons |
 | State            | Zustand (auth + app stores)                                             |
-| Backend / DB     | Firebase — **Firestore** (data), **Authentication**, Storage            |
+| Backend / DB     | Firebase — **Firestore** (data, **region: asia-south1/Mumbai**), **Authentication**, Storage |
 | AI Engine        | **OpenRouter** (`openrouter/free`) called from server-side API routes   |
 | Rich Text        | TipTap (doubt/answer editor)                                            |
 | Animations       | Framer Motion                                                            |
 | Diagrams         | Mermaid.js (AI-generated concept diagrams)                               |
 | Payments         | Razorpay (server-side orders + signature verification)                   |
 | Push             | Web Push (service worker) + Firestore in-app notifications + Vercel cron |
-| Deployment       | **Vercel** (server routes + crons). Firestore rules/indexes via Firebase CLI |
+| Deployment       | **Vercel** (server routes + crons, root dir = `frontend/`). Firestore rules/indexes via Firebase CLI |
+| Repo layout      | Monorepo: `frontend/` (Next.js app) + `backend/` (Firebase config, seeds) |
 
 ## 3. High-Level Architecture
 
@@ -48,48 +49,53 @@ graph TD
 
 * **Server Components** → fast initial paint / SEO (root page, simple pages).
 * **Client Components** (`"use client"`) → interactivity: rich text, video calls, realtime lists.
-* **API routes** (`src/app/api/**/route.ts`) → all privileged operations that must keep
-  secrets (OpenRouter/Razorpay/VAPID) off the client bundle.
-* **Feature modules** (`src/features/<domain>/`) encapsulate domain types + Firestore access
+* **API routes** (`frontend/src/app/api/**/route.ts`) → all privileged operations that must keep
+  secrets (OpenRouter/Razorpay/VAPID) off the client bundle. These are the **BFF** layer.
+* **Feature modules** (`frontend/src/features/<domain>/`) encapsulate domain types + Firestore access
   + domain components. **No cross-feature imports** other than through `notifications/utils`.
 
 ## 4. Directory Map
 
+All paths below are relative to the **repo root** — the app source lives under `frontend/`.
+
 ```bash
 .
-├── docs/
-│   └── ARCHITECTURE.md          # this file
-├── public/
-│   └── sw.js                    # push-notification service worker (/sw.js)
-├── firestore.rules              # Firestore security rules (applied to the live DB)
-├── firestore.indexes.json       # Firestore composite indexes
-├── vercel.json                  # cron schedule: /api/cron/session-reminders
-├── next.config.ts / tsconfig.json / postcss.config.mjs / eslint.config.mjs
-└── src/
-    ├── app/                     # Next.js routes (App Router) — "app layer"
-    │   ├── layout.tsx           # root layout: fonts, AuthProvider, Toaster
-    │   ├── page.tsx             # / → redirect to /login
-    │   ├── (auth)/              # public auth: /login, /register
-    │   ├── (app)/               # authenticated shell (Auth gate + onboarding redirect)
-    │   │   ├── layout.tsx       # auth guard, daily-login, push subscription, AppShell
-    │   │   └── <route>/page.tsx # feed, ask, mentors, sessions, mentor-slots, tests,
-    │   │                        # productivity, messages, call, leaderboard,
-    │   │                        # notifications, profile, settings, admin, seed, onboarding
-    │   └── api/                 # server-only routes (see §6)
-    ├── components/
-    │   ├── layout/              # AppShell, Sidebar, TopHeader, MobileNav
-    │   ├── shared/              # LoadingSkeleton, PageTransition
-    │   └── ui/                  # shadcn/Base-UI primitives + RichTextEditor, AwardBadgeToast
-    ├── features/                # domain-driven modules (see §5)
-    ├── lib/                     # cross-cutting utilities & integrations
-    │   ├── firebase/config.ts   # Firebase client init (singleton)
-    │   ├── ai/productivityCoach.ts
-    │   ├── razorpay/client.ts
-    │   └── badges.ts / utils.ts
-    ├── scripts/                 # CLI seed tooling (tsx, excluded from app build)
-    │   ├── seed.ts              # legacy client-SDK seed (mentors + conversations)
-    │   └── seed/seedMentorData.ts  # admin-SDK emulator seed for recommendation testing
-    └── store/useAppStore.ts     # UI prefs (theme, sidebar)
+├── frontend/                   # Next.js 16 app — the deployable unit on Vercel
+│   ├── src/
+│   │   ├── app/                # Next.js routes (App Router) — "app layer"
+│   │   │   ├── layout.tsx      #   root layout: fonts, AuthProvider, Toaster
+│   │   │   ├── page.tsx        #   / → redirect to /login
+│   │   │   ├── (auth)/         #   public auth: /login, /register
+│   │   │   ├── (app)/          #   authenticated shell (Auth gate + onboarding redirect)
+│   │   │   │   ├── layout.tsx  #     auth guard, daily-login, push subscription, AppShell
+│   │   │   │   └── <route>/    #     feed, ask, mentors, sessions, mentor-slots, tests,
+│   │   │   │                   #     productivity, messages, call, leaderboard,
+│   │   │   │                   #     notifications, profile, settings, admin, seed, onboarding
+│   │   │   └── api/            #   server-only BFF routes (see §6)
+│   │   ├── components/
+│   │   │   ├── layout/         #   AppShell, Sidebar, TopHeader, MobileNav
+│   │   │   ├── shared/         #   LoadingSkeleton, PageTransition
+│   │   │   └── ui/             #   shadcn/Base-UI primitives + RichTextEditor, AwardBadgeToast
+│   │   ├── features/           #   domain-driven modules (see §5)
+│   │   ├── lib/                #   cross-cutting utilities & integrations
+│   │   │   ├── firebase/config.ts   #   Firebase client init (singleton)
+│   │   │   ├── ai/productivityCoach.ts
+│   │   │   ├── razorpay/client.ts
+│   │   │   └── badges.ts / utils.ts
+│   │   ├── store/useAppStore.ts     #   UI prefs (theme, sidebar)
+│   │   └── styles/                  #   globals.css + design tokens
+│   ├── public/sw.js            # push-notification service worker (/sw.js)
+│   ├── vercel.json             # cron schedule: /api/cron/session-reminders
+│   └── next.config.ts / tsconfig.json / postcss.config.mjs / eslint.config.mjs
+├── backend/                    # Firebase server-side config + CLI tooling (not deployed)
+│   ├── config/                 #   firebase.json, .firebaserc, firestore.rules, firestore.indexes.json
+│   ├── scripts/                #   seed.ts (demo), seed/seedMentorData.ts (admin/emulator),
+│   │                           #   gen-vapid.cjs, tsconfig.seed.json
+│   ├── package.json            #   backend deps (tsx, firebase-admin, firebase) + seed scripts
+│   └── README.md               #   Firestore data model + "what lives in which region" map
+├── docs/ARCHITECTURE.md        # this file
+├── README.md                   # monorepo index
+└── PROJECT_OVERVIEW.md         # product overview
 ```
 
 ## 5. Feature Modules
@@ -125,6 +131,10 @@ VAPID private key, cron auth) goes through `src/app/api/*`.
 | `/api/cron/session-reminders`           | GET    | Vercel cron: near-start session reminders (idempotent flags) | CRON_SECRET |
 
 ## 7. Firestore Data Model
+
+> **Region:** every collection below lives in the Firestore `(default)` database located in
+> **`asia-south1` (Mumbai)** — set in `backend/config/firebase.json`
+> (`firestore.location`). Per-collection breakdown → see [`backend/README.md`](../backend/README.md).
 
 Collection paths used across the app:
 
@@ -211,14 +221,16 @@ See `.env.example` for the full list:
 
 ## 11. Development & Seeding
 
-- **Run:** `npm run dev` (see `.env.local` for keys).
+- **Run:** `cd frontend && npm run dev` (see `frontend/.env.local` for keys).
 - **Demo data in-app:** log in and open **`/seed`** → creates demo student/mentor/admin
   accounts, mock mentors, and mock doubts.
-- **Recommendation test data (emulator):** `npm run seed:mentors` →
-  `src/scripts/seed/seedMentorData.ts` (Admin SDK; emulator-guarded, see file header).
-- **Legacy CLI seed:** `npm run seed` → `src/scripts/seed.ts` (seeds mentors + conversations).
-- **Build:** `npm run build` (Vercel runs this; the `out/` folder is a stale git-ignored
-  static export and is **not** used by Vercel deployment).
+- **Recommendation test data (emulator):** `cd backend && npm run seed:mentors` →
+  `backend/scripts/seed/seedMentorData.ts` (Admin SDK; emulator-guarded, see file header).
+- **Legacy CLI seed:** `cd backend && npm run seed` → `backend/scripts/seed.ts`
+  (seeds mentors + conversations; needs `NEXT_PUBLIC_FIREBASE_*` env vars).
+- **Secrets:** VAPID keypair generation → `cd backend && npm run vapid:generate`.
+- **Build:** `cd frontend && npm run build` (Vercel runs this from root dir `frontend/`;
+  the old `out/` static export is unused).
 
 ## 12. Conventions
 

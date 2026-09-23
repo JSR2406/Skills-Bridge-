@@ -1,5 +1,6 @@
 // Use this script to seed the platform with sample mentors and messages
-// Run with: npx tsx src/scripts/seed.ts
+// Run from backend/:  npm run seed
+// Requires NEXT_PUBLIC_FIREBASE_* env vars (see backend/.env.example).
 
 import { initializeApp } from 'firebase/app';
 import { 

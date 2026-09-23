@@ -1,105 +1,61 @@
-# 🌟 SkillBridge: Peer-to-Peer AI Learning Platform
+# 🌟 SkillBridge
 
-SkillBridge is a modern ecosystem built for students to bridge the gap between doubts and mastery. It combines a vibrant peer-to-peer discussion feed with advanced AI tutoring and integrated mentorship.
+Peer-to-peer AI learning platform — real-time doubt resolution, AI tutoring,
+mentorship, productivity coaching, and gamification.
 
-**Live Demo**: [https://skillsbridge-jet.vercel.app/](https://skillsbridge-jet.vercel.app/)
+> **Full architecture reference:** [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)
 
-**Demo video**: [https://express.adobe.com/id/urn:aaid:sc:AP:5b2aa685-0ab3-466e-9113-141300c268d6?invite=true&accept=true%3Fpreload%3Dsharesheet&promoid=Z2G1FQKR&mv=other](https://express.adobe.com/id/urn:aaid:sc:AP:5b2aa685-0ab3-466e-9113-141300c268d6?invite=true&accept=true%3Fpreload%3Dsharesheet&promoid=Z2G1FQKR&mv=other)
+## 📦 Monorepo layout
 
-
-## ✨ Key Features
-
-### 🧠 AI Productivity & Study Module
-- **AI Study Plan Generator**: Analyzes your recent activities (Doubt history, Test scores, Mentor sessions) to generate custom 24-hour study priorities.
-- **Smart Task Management**: Integrated scheduler that allows you to "Quick Add" follow-up tasks directly from AI answers or mentor slots.
-- **Progress Tracking**: Real-time stats on tasks completed and subjects mastered.
-
-### ❓ Smart Doubt Resolution
-- **AI First-Response**: AI attempts to solve student doubts in under 5 seconds with structured explanations.
-- **Peer Feed**: If the AI doesn't solve it, the doubt is published to a global community feed for peer resolution.
-- **Verified Answers**: Authors can mark "Accepted" answers, awarding reputation to contributors.
-
-### 🤝 Expert Mentorship + Smart Matching
-- **Smart Mentor Recommendations**: Heuristic engine ranks mentors using 5 signals — Topic Match (40 pts), Rating (25 pts), Availability (20 pts), Novelty (10 pts), Budget fit (5 pts). Score shown as X/100 with a "Why recommended?" breakdown per card.
-- **Race-Condition-Safe Booking**: Slot booking uses Firestore `runTransaction` — two students cannot claim the same slot simultaneously.
-- **Mentor Slot Manager** *(new)*: Mentors manage their own availability from `/mentor-slots` — add time slots with date, time, and fee; view upcoming/booked/expired slots; delete unbooked slots in one click.
-- **Post-Session Rating Flow** *(new)*: After a session ends, students rate their mentor (1–5 stars + comment). Rating atomically updates the mentor's rolling `averageRating` via Firestore transaction and is idempotent — once submitted, the button changes to a "Rated" badge.
-- **Direct Consultations**: Real-time messaging and video sessions with peer experts via Jitsi Meet.
-- **Idempotent Session Reminders**: Cron-based reminders (30 min + 5 min before sessions) use atomic flag writes to guarantee at-most-once delivery.
-
-### 🛡️ Admin Dashboard
-- **Analytics**: Platform-wide stats — total users, solved doubts, active mentors, and test attempts.
-- **User Management**: Role assignment (student / mentor / admin) for any user.
-- **Content Moderation**: Browse and delete community doubts from the feed.
-- **Mentor Approval Tab** *(new)*: Admins review pending mentor applications with full profile details (headline, college, subjects, fee). One-click **Approve** (makes the mentor live) or **Reject** (deletes the application). Live badge on the tab shows the number of pending applications.
-
-### 🏆 Gamification Engine
-- **Reputation Points**: Earn points for answering, completing tests, and following your study plan.
-- **Premium Badges**: Unlockable achievements (e.g., "Novice Solver", "Productivity Pro") with animated unlock ceremonies.
-- **Leaderboards**: Subject-specific leaderboards to showcase top contributors.
-
----
-
-## 🛠 Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 16 (App Router) + React 19 |
-| Language | TypeScript (strict) |
-| Backend / DB / Auth | Firebase (Firestore, Authentication, Storage) |
-| AI Engine | OpenRouter (Gemini 2.0 Flash) |
-| State / UI | Zustand, Tailwind CSS v4, shadcn-style components on Base UI, Framer Motion |
-| Payments | Razorpay |
-| Deployment | Vercel (+ cron for session reminders) |
-
-> 📘 **Full architecture reference:** [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — data model, data flows, API routes, and module map.
-
-## 📂 Project Structure
-
-```bash
-src/
-├── app/               # Next.js Routes & App Logic
-│   ├── (app)/         # Protected app pages
-│   │   ├── mentors/       # Mentor directory + smart ranking
-│   │   ├── mentor-slots/  # Mentor availability manager (new)
-│   │   ├── sessions/      # My sessions + rating flow (new)
-│   │   └── admin/         # Admin dashboard + mentor approvals (new)
-│   └── api/           # Backend API routes (AI, payments, cron)
-├── components/        # Reusable UI & Layout Components
-├── features/          # Domain-driven Modules
-│   └── mentors/
-│       ├── api.ts           # Slot CRUD, rating, approval APIs (new)
-│       ├── recommendation/  # Heuristic scoring engine
-│       └── components/
-│           └── RateSessionModal.tsx  # Post-session rating modal (new)
-├── lib/               # Shared Utilities & Firebase Config
-├── scripts/           # CLI seed tooling (not part of app build)
-├── store/             # Zustand app store
-└── styles/            # Core CSS & Design Tokens
+```
+skillsbridge/
+├── frontend/          # Next.js 16 app (React 19, TypeScript) — deployable on Vercel
+│   ├── src/           #   app (pages + BFF API routes), components, features, lib, store
+│   ├── public/        #   static assets + service worker (sw.js)
+│   ├── package.json   #   frontend dependencies + build/dev scripts
+│   ├── vercel.json    #   cron schedule (session reminders)
+│   └── README.md      #   app features, demo credentials, judging guide
+├── backend/           # Firebase config & CLI tooling — NOT deployed to Vercel
+│   ├── config/        #   firebase.json, firestore.rules, firestore.indexes.json
+│   ├── scripts/       #   seed tooling (demo + mentor admin seeds), VAPID generator
+│   ├── package.json   #   backend deps (firebase-admin, tsx) + seed scripts
+│   └── README.md      #   Firebase data model + "what lives in which region" map
+├── docs/              # Architecture documentation
+└── PROJECT_OVERVIEW.md
 ```
 
-## 🏁 How to Judge / Test
+## 🚀 Quick start
 
-1. **Sign Up / Login**: Use the demo accounts below or create a new account.
-2. **Post a Doubt**: Go to "Ask Doubt" — see AI first-response in action.
-3. **Browse Mentors**: View ranked mentor cards with match scores and "Why recommended?" breakdowns.
-4. **Book a Session**: Pick a mentor slot — the booking is race-condition safe.
-5. **Rate a Session**: After a session completes, the "Rate this session" button appears for the student.
-6. **Mentor Onboarding**: Apply as a mentor → auto-redirected to "My Slots" to add availability.
-7. **Admin Controls**: Login as admin → see the Mentors tab with pending approval queue.
-8. **Productivity**: Generate an AI study plan based on your doubt and test history.
+**1. Frontend (the app)**
 
-### 🔑 Demo Credentials
+```bash
+cd frontend
+npm install          # or npm ci
+npm run dev          # http://localhost:3000  (needs .env.local — see .env.example)
+```
 
-| Role | Email | Password |
+**2. Backend (Firebase + seeds)** — see [`backend/README.md`](./backend/README.md)
+
+```bash
+cd backend
+npm install
+npm run seed:mentors   # emulator-first mentor/student seed
+```
+
+## ☁️ Deployment
+
+| Surface | Where | How |
 |---|---|---|
-| Student | `demo.student@skillsbridge.app` | `Demo@1234` |
-| Mentor | `demo.mentor@skillsbridge.app` | `Demo@1234` |
-| Admin | `demo.admin@skillsbridge.app` | `Admin@1234` |
+| **App + API routes** | Vercel | Deploys from `frontend/` — set the Vercel project's **Root Directory** to `frontend/` |
+| **Vercel cron** | `frontend/vercel.json` | Daily `00:00 UTC` → `GET /api/cron/session-reminders` |
+| **Firestore rules/indexes** | Firebase | `firebase deploy --only firestore` from `backend/` |
+| **Auth / Storage** | Firebase | Configured in Firebase console / `backend/config/firebase.json` |
 
-> Run the `/seed` page after login to populate demo mentors and doubt feed if the database is empty.
+## 📖 Docs
 
----
+- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — module map, data flows, API reference
+- [`backend/README.md`](./backend/README.md) — Firestore data model + region map
+- [`frontend/README.md`](./frontend/README.md) — app features, demo accounts, test guide
+- [`PROJECT_OVERVIEW.md`](./PROJECT_OVERVIEW.md) — product overview
 
-Built with ❤️ for the **Modern Student**.
-📄 [Judge's Presentation Guide](./HACKATHON_PRESENTATION.md)
+**Live demo:** https://skillsbridge-jet.vercel.app/

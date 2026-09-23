@@ -20,11 +20,17 @@ SkillBridge leverages a cutting-edge front-end and a responsive serverless back-
 *   **Deployment**: Vercel (Edge network, CI/CD, cron jobs)
 
 ## 3. High-Level Architecture
-The architecture follows a modular, feature-oriented design within a Next.js Monolithic structure:
+The architecture follows a modular, feature-oriented design split across two top-level folders.
+
+*   **`frontend/`** — the Next.js 16 app (client + server-side **BFF** API routes).
+*   **`backend/`** — Firebase server-side config (rules, indexes) and CLI seed tooling.
+
+> See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for the full module map and
+> [`backend/README.md`](./backend/README.md) for the Firestore data model + region map.
 
 ```mermaid
 graph TD
-    Client[Next.js Client Components] --> Server[Next.js Server Actions / API Routes]
+    Client[Next.js Client Components] --> Server[Next.js Server Routes / API]
     Client --> GlobalState[Zustand Store]
     Server --> DB[(Firebase Firestore)]
     Server --> Auth[Firebase Authentication]
@@ -33,7 +39,7 @@ graph TD
     Client <--> WebRTC[Jitsi Meet Integration]
 ```
 
-*   **Domain-Driven Structure**: The codebase (`src/features/`) is organized by domain (Auth, Doubts, Mentors, Productivity, Gamification), ensuring encapsulation of UI, state, and API logic.
+*   **Domain-Driven Structure**: The codebase (`frontend/src/features/`) is organized by domain (Auth, Doubts, Mentors, Productivity, Gamification), ensuring encapsulation of UI, state, and API logic.
 *   **Client/Server Split**: Next.js Server Components are used for fast initial loads and SEO, while Client Components (`"use client"`) handle interactive elements (animations, WebRTC, rich text editing).
 *   **Real-time Layer**: Firestore's snapshot listeners provide instant updates for chat messages, doubt resolutions, and notification delivery without manual refreshing.
 

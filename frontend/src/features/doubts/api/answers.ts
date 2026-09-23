@@ -13,7 +13,8 @@ import {
   getDoc,
 } from 'firebase/firestore';
 // ── FEATURE: Doubts — Answers API (client)
-// Firestore client for the `answers` subcollection: post, vote, accept-as-correct.
+// Firestore client for the top-level `answers` collection (docs carry a
+// `doubtId` field): post, vote, accept-as-correct.
 import { db } from '@/lib/firebase/config';
 import { awardPoints } from '../../reputation/api';
 

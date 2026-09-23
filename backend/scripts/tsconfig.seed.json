@@ -9,11 +9,8 @@
     "resolveJsonModule": true,
     "strict": true,
     "skipLibCheck": true,
-    "outDir": ".seed-out",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "outDir": ".seed-out"
   },
-  "include": ["src/scripts/**/*.ts"],
+  "include": ["seed.ts", "seed/**/*.ts"],
   "exclude": ["node_modules"]
 }
