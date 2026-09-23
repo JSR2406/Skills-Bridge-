@@ -20,6 +20,7 @@ skillsbridge/
 │   ├── scripts/       #   seed tooling (demo + mentor admin seeds), VAPID generator
 │   ├── package.json   #   backend deps (firebase-admin, tsx) + seed scripts
 │   └── README.md      #   Firebase data model + "what lives in which region" map
+├── vercel.json        #   rootDirectory: "frontend" → Vercel deploys the app with no setting changes
 ├── docs/              # Architecture documentation
 └── PROJECT_OVERVIEW.md
 ```
@@ -46,7 +47,7 @@ npm run seed:mentors   # emulator-first mentor/student seed
 
 | Surface | Where | How |
 |---|---|---|
-| **App + API routes** | Vercel | Deploys from `frontend/` — set the Vercel project's **Root Directory** to `frontend/` |
+| **App + API routes** | Vercel | Auto — the root [`vercel.json`](./vercel.json) sets `rootDirectory` to `frontend/`, so deploys build the app with **no dashboard change needed** |
 | **Vercel cron** | `frontend/vercel.json` | Daily `00:00 UTC` → `GET /api/cron/session-reminders` |
 | **Firestore rules/indexes** | Firebase | `firebase deploy --only firestore` from `backend/` |
 | **Auth / Storage** | Firebase | Configured in Firebase console / `backend/config/firebase.json` |

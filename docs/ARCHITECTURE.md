@@ -28,7 +28,7 @@ SkillBridge is a **peer-to-peer AI learning platform** for college students. A s
 | Diagrams         | Mermaid.js (AI-generated concept diagrams)                               |
 | Payments         | Razorpay (server-side orders + signature verification)                   |
 | Push             | Web Push (service worker) + Firestore in-app notifications + Vercel cron |
-| Deployment       | **Vercel** (server routes + crons, root dir = `frontend/`). Firestore rules/indexes via Firebase CLI |
+| Deployment       | **Vercel** (server routes + crons, root dir = `frontend/` via root `vercel.json` `rootDirectory`). Firestore rules/indexes via Firebase CLI |
 | Repo layout      | Monorepo: `frontend/` (Next.js app) + `backend/` (Firebase config, seeds) |
 
 ## 3. High-Level Architecture
@@ -229,8 +229,9 @@ See `.env.example` for the full list:
 - **Legacy CLI seed:** `cd backend && npm run seed` → `backend/scripts/seed.ts`
   (seeds mentors + conversations; needs `NEXT_PUBLIC_FIREBASE_*` env vars).
 - **Secrets:** VAPID keypair generation → `cd backend && npm run vapid:generate`.
-- **Build:** `cd frontend && npm run build` (Vercel runs this from root dir `frontend/`;
-  the old `out/` static export is unused).
+- **Build:** `cd frontend && npm run build` (Vercel runs this automatically inside
+  `frontend/` because the repo-root [`vercel.json`](../vercel.json) sets
+  `rootDirectory: "frontend"` — no dashboard setting needed).
 
 ## 12. Conventions
 
