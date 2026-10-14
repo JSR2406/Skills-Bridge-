@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { getApprovedMentors, getMentorSlots } from '@/features/mentors/api';
 import { MentorProfile, MentorSlot } from '@/features/mentors/types';
+import { recordSearch, readQueryParam, replaceQueryParam } from '@/features/search/api';
+import { RecentSearches } from '@/features/search/components/RecentSearches';
 import {
   rankMentors,
   buildRecommendationContext,
@@ -18,7 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import {
   Search, Star, BookOpen, ChevronRight, Zap, Sparkles,
-  Eye, TrendingUp, Clock, Wallet, BadgeCheck,
+  Eye, TrendingUp, Clock, Wallet, BadgeCheck, X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -64,11 +66,31 @@ export default function MentorDirectoryPage() {
   const [mentors, setMentors]               = useState<MentorProfile[]>([]);
   const [scoredMentors, setScoredMentors]   = useState<ScoredMentor[]>([]);
   const [slotsMap, setSlotsMap]             = useState<Record<string, MentorSlot[]>>({});
-  const [search, setSearch]                 = useState('');
+  // Prefilled by the global header search landing on /mentors?q=…
+  const [search, setSearch]                   = useState('');
+  const [isSearchOpen, setIsSearchOpen]     = useState(false);
   const [isLoading, setIsLoading]           = useState(true);
   const [isRanking, setIsRanking]           = useState(false);
   const [expandedReason, setExpandedReason] = useState<string | null>(null);
   const [inShadow]                          = useState(isInShadowMode());
+  const searchWrapRef                       = useRef<HTMLDivElement>(null);
+
+  // Adopt "?q=" handed over by the global header search. Runs after mount so the
+  // prerendered markup and the first client render stay identical.
+  useEffect(() => {
+    const initial = readQueryParam('q');
+    if (initial) setSearch(initial);
+  }, []);
+
+  // Close the recent-searches panel on outside click
+  useEffect(() => {
+    if (!isSearchOpen) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (!searchWrapRef.current?.contains(e.target as Node)) setIsSearchOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [isSearchOpen]);
 
   // ── Load mentors + slots ───────────────────────────────────────────────────
   useEffect(() => {
@@ -165,6 +187,19 @@ export default function MentorDirectoryPage() {
     setExpandedReason(prev => (prev === uid ? null : uid));
   }, []);
 
+  /** Commit a search: mirror it into the URL and the user's search history. */
+  const commitSearch = useCallback(
+    (value: string, hits: number) => {
+      setSearch(value);
+      setIsSearchOpen(false);
+      router.replace(replaceQueryParam('/mentors', 'q', value), { scroll: false });
+      if (user && value.trim()) {
+        recordSearch(user.uid, value, 'mentors', hits).catch(console.error);
+      }
+    },
+    [router, user],
+  );
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-fade-in pb-20">
@@ -236,13 +271,17 @@ export default function MentorDirectoryPage() {
       )}
 
       {/* ── Search ── */}
-      <div className="relative max-w-md">
+      <div ref={searchWrapRef} className="relative max-w-md">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#4fdbc8]/50" />
         <input
           placeholder="Search by name, subject, or expertise..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full h-11 pl-10 pr-4 rounded-xl text-sm outline-none transition-all duration-300"
+          onKeyDown={e => {
+            if (e.key === 'Enter') commitSearch(search, displayList.length);
+            if (e.key === 'Escape') setIsSearchOpen(false);
+          }}
+          className="w-full h-11 pl-10 pr-10 rounded-xl text-sm outline-none transition-all duration-300"
           style={{
             background: 'rgba(19, 27, 46, 0.7)',
             border: '1px solid rgba(79, 219, 200, 0.1)',
@@ -250,6 +289,7 @@ export default function MentorDirectoryPage() {
             fontFamily: "'Manrope', sans-serif",
           }}
           onFocus={e => {
+            setIsSearchOpen(true);
             e.currentTarget.style.borderColor = 'rgba(79, 219, 200, 0.4)';
             e.currentTarget.style.boxShadow = '0 0 16px rgba(79, 219, 200, 0.08)';
             e.currentTarget.style.background = 'rgba(28, 36, 64, 0.9)';
@@ -260,6 +300,36 @@ export default function MentorDirectoryPage() {
             e.currentTarget.style.background = 'rgba(19, 27, 46, 0.7)';
           }}
         />
+        {search && (
+          <button
+            onClick={() => commitSearch('', 0)}
+            aria-label="Clear search"
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center text-[#8899b8] hover:text-[#4fdbc8] hover:bg-[rgba(79,219,200,0.1)] transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Recent searches — shown while the field is focused and empty */}
+        {isSearchOpen && !search.trim() && (
+          <div
+            className="absolute left-0 right-0 top-[calc(100%+8px)] z-40 rounded-xl overflow-hidden animate-fade-in"
+            style={{
+              background: 'rgba(15, 23, 37, 0.97)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(79, 219, 200, 0.15)',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.55)',
+            }}
+          >
+            <RecentSearches
+              userId={user?.uid}
+              source="mentors"
+              query={search}
+              onSelect={(term) => commitSearch(term, displayList.length)}
+            />
+          </div>
+        )}
       </div>
 
       {/* ── Grid ── */}

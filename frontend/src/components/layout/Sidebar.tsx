@@ -20,7 +20,8 @@ import {
   ShieldAlert,
   Sparkles,
   Trophy,
-  MessageSquare
+  MessageSquare,
+  BadgeIndianRupee
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
@@ -33,6 +34,7 @@ const NAV_ITEMS = [
   { name: 'Practice Tests', href: '/tests', icon: BookOpenCheck },
   { name: 'Productivity', href: '/productivity', icon: Sparkles },
   { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
+  { name: 'Pricing', href: '/pricing', icon: BadgeIndianRupee },
   { name: 'Notifications', href: '/notifications', icon: Bell },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];

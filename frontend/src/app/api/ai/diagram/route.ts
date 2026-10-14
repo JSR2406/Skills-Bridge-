@@ -2,8 +2,9 @@
 // Takes a doubt topic, returns a Mermaid `flowchart TD` diagram illustrating
 // the concept (hidden behind the "Generate diagram" button in the AI answer).
 import { NextRequest, NextResponse } from 'next/server';
+import { chatCompletion } from '@/lib/ai/openrouter';
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,35 +37,19 @@ flowchart TD
     B -->|Yes| C[Result A]
     B -->|No| D[Result B]`;
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://skillsbridge-jet.vercel.app',
-        'X-Title': 'SkillBridge',
-      },
-      body: JSON.stringify({
-        model: 'openrouter/free',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 800,
-        temperature: 0.3,
-      }),
+    const { text } = await chatCompletion(OPENROUTER_API_KEY, {
+      task: 'diagram',
+      messages: [{ role: 'user', content: prompt }],
+      maxTokens: 800,
+      temperature: 0.3,
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      return NextResponse.json({ error: `OpenRouter error: ${errText}` }, { status: 500 });
-    }
-
-    const data = await response.json();
-    let diagram = data.choices?.[0]?.message?.content?.trim() || '';
-
-    // Strip markdown fences if model adds them
-    diagram = diagram.replace(/^```(?:mermaid)?\n?/i, '').replace(/\n?```$/i, '').trim();
+    // Strip markdown fences / reasoning chatter if the model adds them
+    const diagram = text.replace(/^```(?:mermaid)?\n?/i, '').replace(/\n?```$/i, '').trim();
 
     return NextResponse.json({ diagram });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Diagram generation failed';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

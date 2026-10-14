@@ -1,9 +1,21 @@
 // ── FEATURE: Doubts — AIExplanationDisplay
-// Server component rendering the DOUBT_AI flow's explanation stream: structured
-// sections (approach, steps), a copy-to-notes action, and pitch-deck generation.
+// Server component rendering the DOUBT_AI flow's explanation stream: reasoning
+// trace, confidence, structured steps, a worked example, a copy-to-notes action,
+// and pitch-deck generation.
 import React from 'react';
 import { AIExplanation } from '../types';
-import { Bot, CheckCircle2, AlertCircle, Bookmark, Lightbulb, ArrowRight } from 'lucide-react';
+import {
+  Bot,
+  CheckCircle2,
+  AlertCircle,
+  Bookmark,
+  Lightbulb,
+  ArrowRight,
+  Brain,
+  FlaskConical,
+  Tags,
+  ShieldCheck,
+} from 'lucide-react';
 import { QuickAddTaskButton } from '../../productivity/components/QuickAddTaskButton';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -15,18 +27,29 @@ interface AIExplanationDisplayProps {
   isSubmitting: boolean;
 }
 
-export const AIExplanationDisplay: React.FC<AIExplanationDisplayProps> = ({ 
-  explanation, 
-  onAccept, 
+/** Confidence → chip colour + copy. Calibrated honesty, not a percentage. */
+const CONFIDENCE_META = {
+  high: { label: 'High confidence', colour: '#4fdbc8', hint: 'Verified across the steps below.' },
+  medium: { label: 'Medium confidence', colour: '#fbbf24', hint: 'Worth double-checking the details.' },
+  low: { label: 'Low confidence', colour: '#ff8080', hint: 'Ambiguous or under-specified question — consider asking a mentor.' },
+} as const;
+
+export const AIExplanationDisplay: React.FC<AIExplanationDisplayProps> = ({
+  explanation,
+  onAccept,
   onPostAnyway,
-  isSubmitting 
+  isSubmitting
 }) => {
+  const confidence = explanation.confidence
+    ? CONFIDENCE_META[explanation.confidence]
+    : null;
+
   return (
     <div className="relative overflow-hidden rounded-3xl bg-[rgba(19,27,46,0.8)] border border-[rgba(221,183,255,0.2)] shadow-[0_0_50px_rgba(221,183,255,0.05)] animate-fade-in p-1 sm:p-1 mt-10">
       <div className="absolute top-0 right-0 p-4 opacity-10">
         <Bot size={120} className="text-[#ddb7ff]" />
       </div>
-      
+
       <div className="glass-card !bg-transparent !border-0 p-6 sm:p-10 space-y-10 relative z-10">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -41,6 +64,23 @@ export const AIExplanationDisplay: React.FC<AIExplanationDisplayProps> = ({
           </div>
         </div>
 
+        {/* Confidence */}
+        {confidence && (
+          <div
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-4 py-3"
+            style={{
+              background: `${confidence.colour}0d`,
+              border: `1px solid ${confidence.colour}33`,
+            }}
+          >
+            <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: confidence.colour }} />
+            <span className="text-xs font-bold uppercase tracking-widest" style={{ color: confidence.colour }}>
+              {confidence.label}
+            </span>
+            <span className="text-xs text-[#8899b8]">{confidence.hint}</span>
+          </div>
+        )}
+
         {/* Restated Question */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-[#4fdbc8] font-bold text-xs uppercase tracking-widest">
@@ -51,6 +91,19 @@ export const AIExplanationDisplay: React.FC<AIExplanationDisplayProps> = ({
             <p className="text-[#dae2fd] font-medium italic">"{explanation.restatedQuestion}"</p>
           </div>
         </div>
+
+        {/* Reasoning trace */}
+        {explanation.reasoning && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-[#ddb7ff] font-bold text-xs uppercase tracking-widest">
+              <Brain size={14} />
+              How this was reasoned
+            </div>
+            <div className="p-5 rounded-2xl bg-[rgba(221,183,255,0.04)] border border-[rgba(221,183,255,0.12)]">
+              <p className="text-sm text-[#c8d4f0] leading-relaxed">{explanation.reasoning}</p>
+            </div>
+          </div>
+        )}
 
         {/* Steps */}
         <div className="space-y-6">
@@ -72,6 +125,44 @@ export const AIExplanationDisplay: React.FC<AIExplanationDisplayProps> = ({
           </div>
         </div>
 
+        {/* Worked example */}
+        {explanation.workedExample && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-[#4fdbc8] font-bold text-xs uppercase tracking-widest">
+              <FlaskConical size={14} />
+              Worked example
+            </div>
+            <div className="p-5 rounded-2xl bg-[rgba(79,219,200,0.04)] border border-[rgba(79,219,200,0.12)] prose prose-sm dark:prose-invert prose-p:text-[#dae2fd] prose-pre:bg-[#0b1326] prose-pre:border prose-pre:border-[rgba(255,255,255,0.1)] max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{explanation.workedExample}</ReactMarkdown>
+            </div>
+          </div>
+        )}
+
+        {/* Key concepts */}
+        {explanation.keyConcepts && explanation.keyConcepts.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-[#8899b8] font-bold text-xs uppercase tracking-widest">
+              <Tags size={14} />
+              Key concepts
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {explanation.keyConcepts.map((concept, idx) => (
+                <span
+                  key={idx}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-full"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: '#c8d4f0',
+                  }}
+                >
+                  {concept}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Common Mistakes */}
         {explanation.commonMistakes.length > 0 && (
           <div className="space-y-4">
@@ -86,6 +177,19 @@ export const AIExplanationDisplay: React.FC<AIExplanationDisplayProps> = ({
                   {mistake}
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Self-verification */}
+        {explanation.verification && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-[#a5f3fc] font-bold text-xs uppercase tracking-widest">
+              <ShieldCheck size={14} />
+              Self-check
+            </div>
+            <div className="p-4 rounded-xl bg-[rgba(165,243,252,0.03)] border border-[rgba(165,243,252,0.1)]">
+              <p className="text-sm text-[#a5f3fc]/80 leading-relaxed">{explanation.verification}</p>
             </div>
           </div>
         )}

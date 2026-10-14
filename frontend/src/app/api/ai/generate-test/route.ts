@@ -2,6 +2,7 @@
 // Generates a practice test (5 MCQ with explanations) for a subject/topic via
 // OpenRouter and persists it into the `tests` collection.
 import { NextResponse } from 'next/server';
+import { chatCompletion, extractJson } from '@/lib/ai/openrouter';
 
 const apiKey = process.env.OPENROUTER_API_KEY || '';
 
@@ -43,56 +44,24 @@ Return STIRCTLY a valid JSON object:
   ]
 }`;
 
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://skillsbridge-jet.vercel.app",
-        "X-Title": "SkillBridge"
-      },
-      body: JSON.stringify({
-        model: "openrouter/free",
-        messages: [
-          { role: "user", content: prompt }
-        ]
-      })
+    const { text } = await chatCompletion(apiKey, {
+      task: 'test',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.5,
+      maxTokens: 3072,
     });
 
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`OpenRouter error: ${err}`);
-    }
+    const parsed = extractJson<{ questions?: unknown }>(text);
 
-    const json = await res.json();
-    let text = json.choices[0].message.content.trim();
-
-    // Safety check for markdown code blocks and stray text
-    if (text.includes('```')) {
-      const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (match) text = match[1].trim();
-    }
-    
-    // Final cleanup of any potential stray characters before/after JSON
-    const startIdx = text.indexOf('{');
-    const endIdx = text.lastIndexOf('}');
-    if (startIdx !== -1 && endIdx !== -1) {
-      text = text.substring(startIdx, endIdx + 1);
-    }
-
-    try {
-      const parsed = JSON.parse(text);
-      return NextResponse.json({ questions: parsed.questions || parsed });
-    } catch (e) {
-      console.error('Failed to parse AI Test JSON:', text);
+    if (!parsed) {
+      console.error('Failed to parse AI Test JSON:', text.slice(0, 500));
       throw new Error('AI response was not valid JSON');
     }
 
-  } catch (error: any) {
-    console.error('OpenRouter Test Generation Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate test' },
-      { status: 500 }
-    );
+    return NextResponse.json({ questions: parsed.questions || parsed });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to generate test';
+    console.error('OpenRouter Test Generation Error:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

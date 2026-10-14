@@ -1,6 +1,23 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ── Search history ───────────────────────────────────────────────────────
+    // One doc per unique term per user (id = "{uid}_{encodedTerm}").
+    // Private to its owner: nobody else can read, write or delete entries.
+    match /searchHistory/{entryId} {
+      allow read: if request.auth != null
+                  && resource.data.userId == request.auth.uid;
+
+      allow create, update: if request.auth != null
+                  && request.resource.data.userId == request.auth.uid;
+
+      allow delete: if request.auth != null
+                  && resource.data.userId == request.auth.uid;
+    }
+
+    // ── Prototype fallback ───────────────────────────────────────────────────
+    // TODO: tighten per collection before production — see docs/ARCHITECTURE.md §9.
     match /{document=**} {
       allow read, write: if true;
     }

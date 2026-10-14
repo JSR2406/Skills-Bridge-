@@ -5,10 +5,11 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { Menu, Search, LogOut, User as UserIcon, Settings, Bell, Zap, BellRing, MessageSquare } from 'lucide-react';
+import { Menu, LogOut, User as UserIcon, Settings, Bell, Zap, BellRing, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { auth } from '@/lib/firebase/config';
+import { GlobalSearch } from '@/features/search/components/GlobalSearch';
 import { signOut } from 'firebase/auth';
 import {
   DropdownMenu,
@@ -29,7 +30,6 @@ export function TopHeader() {
 
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const [searchFocused, setSearchFocused] = useState(false);
   const isFirstLoad = useRef(true);
   const knownNotifIds = useRef(new Set<string>());
 
@@ -120,31 +120,7 @@ export function TopHeader() {
         </Button>
 
         {/* Search bar */}
-        <div
-          className="relative w-full max-w-md hidden sm:block transition-all duration-300"
-          style={{ maxWidth: searchFocused ? '420px' : '320px' }}
-        >
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#4fdbc8]/50" />
-          <input
-            type="text"
-            placeholder="Search doubts, mentors, tags..."
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            className="w-full h-9 pl-9 pr-4 text-sm font-[Manrope] text-[#dae2fd] placeholder:text-[#8899b8]/60 rounded-lg transition-all duration-300 outline-none"
-            style={{
-              background: searchFocused ? 'rgba(28, 36, 64, 0.9)' : 'rgba(19, 27, 46, 0.6)',
-              border: searchFocused
-                ? '1px solid rgba(79, 219, 200, 0.4)'
-                : '1px solid rgba(79, 219, 200, 0.1)',
-              boxShadow: searchFocused ? '0 0 16px rgba(79, 219, 200, 0.1)' : 'none',
-            }}
-          />
-          {searchFocused && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[#8899b8]/50 font-mono">
-              ⌘K
-            </div>
-          )}
-        </div>
+        <GlobalSearch />
       </div>
 
       {/* Right: Actions */}

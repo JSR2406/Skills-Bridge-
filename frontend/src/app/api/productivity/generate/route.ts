@@ -4,6 +4,7 @@
 // in `aiProductivityLogs` (today/week timeframe).
 import { NextResponse } from 'next/server';
 import { COACH_PROMPT } from '@/lib/ai/productivityCoach';
+import { chatCompletion, extractJson } from '@/lib/ai/openrouter';
 
 const apiKey = process.env.OPENROUTER_API_KEY || '';
 
@@ -24,63 +25,35 @@ ${JSON.stringify(context, null, 2)}
 Provide the JSON Study Plan now. ONLY output the raw JSON object, without any markdown formatting like \`\`\`json.
 `;
 
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://skillsbridge-jet.vercel.app",
-        "X-Title": "SkillBridge"
-      },
-      body: JSON.stringify({
-        model: "openrouter/free",
-        messages: [
-          { role: "user", content: fullPrompt }
-        ]
-      })
+    const { text } = await chatCompletion(apiKey, {
+      task: 'coach',
+      messages: [{ role: 'user', content: fullPrompt }],
+      temperature: 0.5,
+      maxTokens: 2048,
     });
 
-    if (!res.ok) {
-      const err = await res.text();
-      console.error('Openrouter raw error:', err);
-      throw new Error(`OpenRouter error: ${res.statusText}`);
-    }
+    const parsedData = extractJson<Record<string, unknown>>(text);
 
-    const json = await res.json();
-    let responseText = json.choices?.[0]?.message?.content || "";
-    responseText = responseText.trim();
-    
-    // Cleanup markdown code blocks if any
-    if (responseText.startsWith('```json')) {
-      responseText = responseText.replace(/^```json|```$/gm, '').trim();
-    }
-    if (responseText.startsWith('```')) {
-      responseText = responseText.replace(/^```|```$/gm, '').trim();
-    }
-
-    try {
-      const parsedData = JSON.parse(responseText);
-      return NextResponse.json(parsedData);
-    } catch (e) {
-      console.error('Failed to parse AI JSON:', responseText);
-      return NextResponse.json({ 
+    if (!parsedData) {
+      console.error('Failed to parse AI JSON:', text.slice(0, 500));
+      return NextResponse.json({
         summary: "I encountered an error while organizing your plan. Here are my raw suggestions.",
         focusAreas: ["Mixed Studies"],
         studyBlocks: [
           {
             title: "Manual Review",
-            description: responseText,
+            description: text,
             durationMinutes: 60
           }
         ],
         followUps: ["Try generating the plan again in a few minutes."]
       });
     }
-  } catch (error: any) {
-    console.error('Productivity Coach API Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate productivity plan' },
-      { status: 500 }
-    );
+
+    return NextResponse.json(parsedData);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to generate productivity plan';
+    console.error('Productivity Coach API Error:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

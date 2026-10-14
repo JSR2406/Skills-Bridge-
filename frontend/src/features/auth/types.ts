@@ -32,6 +32,8 @@ export interface UserProfile {
   mentorApproved: boolean;
   /** Optional INR ceiling for mentor session fees — used by recommendation scorer */
   budgetCeiling?: number;
+  /** Selected pricing tier — see `features/pricing` */
+  plan?: string;
   createdAt: any; // Firestore Timestamp
   updatedAt: any; // Firestore Timestamp
 }

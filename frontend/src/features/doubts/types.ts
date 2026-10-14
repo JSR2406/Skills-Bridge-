@@ -35,6 +35,15 @@ export type CreateDoubtInput = Omit<
   'id' | 'upvotes' | 'downvotes' | 'voteScore' | 'responsesCount' | 'isResolved' | 'createdAt' | 'updatedAt' | 'authorName' | 'authorAvatarUrl'
 >;
 
+export type AIConfidence = 'high' | 'medium' | 'low';
+
+/**
+ * Structured answer from `POST /api/ai/doubt`.
+ *
+ * `reasoning` … `confidence` are the enhanced-reasoning fields: the model is
+ * asked to show its chain of reasoning, verify its own work and calibrate how
+ * sure it is. All four are optional so older cached payloads still render.
+ */
 export interface AIExplanation {
   restatedQuestion: string;
   steps: string[];
@@ -42,4 +51,16 @@ export interface AIExplanation {
   summaryNotes: string;
   titleSuggestion?: string;
   tagSuggestions?: string[];
+
+  /** Why this approach was chosen, and which alternative was rejected. */
+  reasoning?: string;
+  /** Concrete end-to-end example (numbers or a short code snippet). */
+  workedExample?: string;
+  /** The 3–5 named concepts the answer hinges on. */
+  keyConcepts?: string[];
+  /** Self-check: what was verified and what caveat remains. */
+  verification?: string;
+  confidence?: AIConfidence;
+  /** Which model actually answered (reported by the route). */
+  model?: string;
 }

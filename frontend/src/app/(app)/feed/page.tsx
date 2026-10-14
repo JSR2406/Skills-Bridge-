@@ -1,13 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { subscribeToDoubts, voteDoubt } from '@/features/doubts/api/doubts';
 import { Doubt } from '@/features/doubts/types';
 import { DoubtCard } from '@/features/doubts/components/DoubtCard';
 
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { Plus, Search, Filter, Flame, Star, Clock, TrendingUp, Users, Zap } from 'lucide-react';
+import { recordSearch, readQueryParam, replaceQueryParam } from '@/features/search/api';
+import { RecentSearches } from '@/features/search/components/RecentSearches';
+import { Plus, Search, Filter, Flame, Star, Clock, TrendingUp, Users, Zap, X } from 'lucide-react';
 import Link from 'next/link';
 
 const FILTER_TABS = [
@@ -26,10 +29,20 @@ const ACTIVE_MENTORS = [
 
 export default function FeedPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [doubts, setDoubts] = useState<Doubt[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('Latest');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchWrapRef = useRef<HTMLDivElement>(null);
+
+  // Adopt "?q=" handed over by the global header search. Runs after mount so the
+  // prerendered markup and the first client render stay identical.
+  useEffect(() => {
+    const initial = readQueryParam('q');
+    if (initial) setSearchQuery(initial);
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -40,6 +53,16 @@ export default function FeedPage() {
     return () => unsubscribe();
   }, []);
 
+  // Close the recent-searches panel on outside click
+  useEffect(() => {
+    if (!isSearchOpen) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (!searchWrapRef.current?.contains(e.target as Node)) setIsSearchOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [isSearchOpen]);
+
   const handleVote = async (doubtId: string, value: 1 | -1 | 0) => {
     if (!user) return;
     try {
@@ -49,11 +72,21 @@ export default function FeedPage() {
     }
   };
 
-  const filteredDoubts = doubts.filter(d =>
+  const matchingDoubts = doubts.filter(d =>
     !searchQuery ||
     d.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     d.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  /** Commit a search: mirror it into the URL and the user's search history. */
+  const commitSearch = (value: string, hits: number) => {
+    setSearchQuery(value);
+    setIsSearchOpen(false);
+    router.replace(replaceQueryParam('/feed', 'q', value), { scroll: false });
+    if (user && value.trim()) recordSearch(user.uid, value, 'feed', hits).catch(console.error);
+  };
+
+  const filteredDoubts = matchingDoubts;
 
   return (
     <div className="flex gap-6 animate-fade-in pb-16">
@@ -102,21 +135,15 @@ export default function FeedPage() {
 
         {/* Search + Filter row */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="relative flex-1">
+          <div ref={searchWrapRef} className="relative flex-1">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#4fdbc8]/50" />
             <input
               type="text"
               placeholder="Search doubts, tags..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full h-9 pl-9 pr-4 text-sm rounded-lg outline-none transition-all duration-200"
-              style={{
-                background: 'rgba(19, 27, 46, 0.7)',
-                border: '1px solid rgba(79, 219, 200, 0.1)',
-                color: '#dae2fd',
-                fontFamily: "'Manrope', sans-serif",
-              }}
               onFocus={e => {
+                setIsSearchOpen(true);
                 e.currentTarget.style.borderColor = 'rgba(79, 219, 200, 0.4)';
                 e.currentTarget.style.boxShadow = '0 0 16px rgba(79, 219, 200, 0.08)';
               }}
@@ -124,7 +151,48 @@ export default function FeedPage() {
                 e.currentTarget.style.borderColor = 'rgba(79, 219, 200, 0.1)';
                 e.currentTarget.style.boxShadow = 'none';
               }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') commitSearch(searchQuery, matchingDoubts.length);
+                if (e.key === 'Escape') setIsSearchOpen(false);
+              }}
+              className="w-full h-9 pl-9 pr-8 text-sm rounded-lg outline-none transition-all duration-200"
+              style={{
+                background: 'rgba(19, 27, 46, 0.7)',
+                border: '1px solid rgba(79, 219, 200, 0.1)',
+                color: '#dae2fd',
+                fontFamily: "'Manrope', sans-serif",
+              }}
             />
+            {searchQuery && (
+              <button
+                onClick={() => commitSearch('', 0)}
+                aria-label="Clear search"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded flex items-center justify-center text-[#8899b8] hover:text-[#4fdbc8] hover:bg-[rgba(79,219,200,0.1)] transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {/* Recent searches — shown while the field is focused and empty */}
+            {isSearchOpen && !searchQuery.trim() && (
+              <div
+                className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 rounded-xl overflow-hidden animate-fade-in"
+                style={{
+                  background: 'rgba(15, 23, 37, 0.97)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(79, 219, 200, 0.15)',
+                  boxShadow: '0 24px 60px rgba(0,0,0,0.55)',
+                }}
+              >
+                <RecentSearches
+                  userId={user?.uid}
+                  source="feed"
+                  query={searchQuery}
+                  onSelect={(term) => commitSearch(term, matchingDoubts.length)}
+                />
+              </div>
+            )}
           </div>
           <button
             className="flex items-center gap-2 px-3 h-9 rounded-lg text-sm font-medium text-[#8899b8] hover:text-[#4fdbc8] transition-colors shrink-0"

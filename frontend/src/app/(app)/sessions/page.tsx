@@ -1,74 +1,90 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+// ── APP: /sessions — My Sessions
+// Split into Upcoming vs Past so a user can see, at a glance, both what is
+// coming up and everything they have already booked/attended. Past entries are
+// the "appointment history": rating prompts, payment status and a re-book link.
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { subscribeToUserSessions } from '@/features/mentors/api';
 import { SessionBooking } from '@/features/mentors/types';
+import { SessionCard } from '@/features/mentors/components/SessionCard';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
-import { Calendar, Clock, Video, CheckCircle2, User, ChevronRight, Copy, Check, Star } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { QuickAddTaskButton } from '@/features/productivity/components/QuickAddTaskButton';
 import { RateSessionModal } from '@/features/mentors/components/RateSessionModal';
-import { toast } from 'sonner';
+import {
+  Calendar,
+  CalendarClock,
+  History,
+  IndianRupee,
+  Timer,
+  Trophy,
+} from 'lucide-react';
+import Link from 'next/link';
 
-/** Returns true if session starts within 15 min from now OR is currently running */
-function isCallJoinable(startTime: Date, endTime: Date): boolean {
-  const now = Date.now();
-  const start = startTime.getTime();
-  const end = endTime.getTime();
-  const fifteenMin = 15 * 60 * 1000;
-  return now >= start - fifteenMin && now <= end;
-}
-
-/** Build the in-app call URL */
-function buildCallUrl(session: SessionBooking, displayName: string): string {
-  const base = typeof window !== 'undefined' ? window.location.origin : '';
-  return `${base}/call?session=${session.id}&name=${encodeURIComponent(displayName)}`;
-}
-
-/** Build the public Jitsi direct link */  
-function buildJitsiLink(sessionId: string): string {
-  return `https://meet.jit.si/skillsbridge-${sessionId}`;
-}
+type Tab = 'upcoming' | 'past';
 
 export default function MySessionsPage() {
-  const { user, profile } = useAuth();
-  const router = useRouter();
+  const { user } = useAuth();
   const [sessions, setSessions] = useState<SessionBooking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [ratingSession, setRatingSession] = useState<SessionBooking | null>(null);
+  const [tab, setTab] = useState<Tab>('upcoming');
+  // Snapshot of "now" — refreshed whenever the realtime feed delivers, so the
+  // upcoming/past split never reads an impure clock during render.
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     if (!user) return;
     setIsLoading(true);
     const unsubscribe = subscribeToUserSessions(user.uid, (data) => {
       setSessions(data);
+      setNow(Date.now());
       setIsLoading(false);
     });
     return () => unsubscribe();
   }, [user]);
 
-  const handleCopyLink = useCallback(async (session: SessionBooking) => {
-    const link = buildJitsiLink(session.id);
-    try {
-      await navigator.clipboard.writeText(link);
-      setCopiedId(session.id);
-      toast.success('Meeting link copied!');
-      setTimeout(() => setCopiedId(null), 2500);
-    } catch {
-      toast.error('Could not copy — link: ' + link);
-    }
-  }, []);
+  /** A booking is "upcoming" until its start time passes; everything else is history. */
+  const { upcoming, past, stats } = useMemo(() => {
+    const up: SessionBooking[] = [];
+    const done: SessionBooking[] = [];
 
-  const handleJoinCall = useCallback((session: SessionBooking) => {
-    const name = profile?.name || user?.displayName || 'Student';
-    const url = `/call?session=${session.id}&name=${encodeURIComponent(name)}`;
-    router.push(url);
-  }, [profile, user, router]);
+    for (const s of sessions) {
+      const startsAt = new Date(s.startTime as Date).getTime();
+      const isLiveOrFuture = startsAt > now && s.bookingStatus !== 'cancelled';
+      (isLiveOrFuture ? up : done).push(s);
+    }
+
+    const attended = done.filter((s) => s.bookingStatus !== 'cancelled');
+    const seconds = attended.reduce((acc, s) => {
+      const start = new Date(s.startTime as Date).getTime();
+      const end = new Date(s.endTime as Date).getTime();
+      return acc + Math.max(0, end - start);
+    }, 0);
+
+    return {
+      upcoming: up.sort((a, b) => new Date(a.startTime as Date).getTime() - new Date(b.startTime as Date).getTime()),
+      past: done.sort((a, b) => new Date(b.startTime as Date).getTime() - new Date(a.startTime as Date).getTime()),
+      stats: {
+        upcomingCount: up.length,
+        attendedCount: attended.length,
+        hours: Math.round((seconds / 3_600_000) * 10) / 10,
+        spent: attended.reduce((acc, s) => (s.paymentStatus === 'paid' ? acc + (s.amount || 0) : acc), 0),
+      },
+    };
+  }, [sessions, now]);
+
+  const visible = tab === 'upcoming' ? upcoming : past;
+  const isMentorView = user?.uid ? sessions.some((s) => s.mentorId === user.uid) : false;
 
   if (isLoading) return <div className="max-w-4xl mx-auto mt-10"><LoadingSkeleton /></div>;
+
+  const STAT_CARDS = [
+    { key: 'upcoming', label: 'Upcoming', value: stats.upcomingCount, icon: CalendarClock, colour: '#4fdbc8', tab: 'upcoming' as Tab },
+    { key: 'attended', label: isMentorView ? 'Sessions taught' : 'Attended', value: stats.attendedCount, icon: Trophy, colour: '#ddb7ff', tab: 'past' as Tab },
+    { key: 'hours', label: 'Hours learned', value: `${stats.hours}h`, icon: Timer, colour: '#a5f3fc', tab: 'past' as Tab },
+    { key: 'spent', label: 'Total paid', value: `₹${stats.spent.toLocaleString('en-IN')}`, icon: IndianRupee, colour: '#fbbf24', tab: 'past' as Tab },
+  ];
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-20 relative">
@@ -81,27 +97,93 @@ export default function MySessionsPage() {
             <Calendar className="w-4 h-4" />
             1-on-1 Guidance
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#dae2fd]" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          <h1
+            className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#dae2fd]"
+            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+          >
             My Sessions
           </h1>
           <p className="text-[15px] text-[#8899b8] mt-3 leading-relaxed">
             Manage your upcoming mentorship meetings and review your past completed sessions.
           </p>
         </div>
-        <Link 
-          href="/mentors" 
+        <Link
+          href="/mentors"
           className="btn-gradient shrink-0 px-6 py-2.5 rounded-lg text-sm transition-all shadow-[0_0_20px_rgba(79,219,200,0.15)] relative z-10 hover:shadow-[0_0_24px_rgba(79,219,200,0.25)] hover:-translate-y-0.5 inline-flex items-center gap-2"
         >
           Book New Session
         </Link>
       </div>
 
+      {/* ── Stats ── */}
+      {sessions.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 relative z-10">
+          {STAT_CARDS.map(({ key, label, value, icon: Icon, colour, tab: target }) => (
+            <button
+              key={key}
+              onClick={() => setTab(target)}
+              className="text-left rounded-xl p-4 transition-all duration-200 hover:-translate-y-0.5"
+              style={{
+                background: 'rgba(19, 27, 46, 0.6)',
+                border: `1px solid ${tab === target ? `${colour}44` : 'rgba(79,219,200,0.08)'}`,
+                boxShadow: tab === target ? `0 0 20px ${colour}18` : 'none',
+              }}
+            >
+              <Icon className="w-4 h-4 mb-2" style={{ color: colour }} />
+              <p className="text-xl font-extrabold text-[#dae2fd] leading-none" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                {value}
+              </p>
+              <p className="text-[11px] text-[#8899b8] mt-1">{label}</p>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Tabs ── */}
+      {sessions.length > 0 && (
+        <div
+          className="flex items-center gap-1 p-1 rounded-lg w-fit relative z-10"
+          style={{ background: 'rgba(19, 27, 46, 0.6)', border: '1px solid rgba(79, 219, 200, 0.08)' }}
+        >
+          {(
+            [
+              { id: 'upcoming' as Tab, label: 'Upcoming', count: upcoming.length, icon: CalendarClock },
+              { id: 'past' as Tab, label: 'Past', count: past.length, icon: History },
+            ]
+          ).map(({ id, label, count, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-bold transition-all duration-200"
+              style={{
+                background: tab === id ? 'rgba(79, 219, 200, 0.12)' : 'transparent',
+                color: tab === id ? '#4fdbc8' : '#8899b8',
+                border: tab === id ? '1px solid rgba(79, 219, 200, 0.2)' : '1px solid transparent',
+              }}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+              <span className="text-[10px] opacity-70">({count})</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── List ── */}
       {sessions.length === 0 ? (
         <div className="text-center py-24 glass-card border-dashed">
-          <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center" style={{ background: 'rgba(79, 219, 200, 0.05)', border: '1px solid rgba(79, 219, 200, 0.1)' }}>
+          <div
+            className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center"
+            style={{ background: 'rgba(79, 219, 200, 0.05)', border: '1px solid rgba(79, 219, 200, 0.1)' }}
+          >
             <Calendar className="w-8 h-8 text-[#4fdbc8]/60" />
           </div>
-          <h3 className="text-xl font-extrabold text-[#dae2fd] mb-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>No sessions booked yet</h3>
+          <h3
+            className="text-xl font-extrabold text-[#dae2fd] mb-2"
+            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+          >
+            No sessions booked yet
+          </h3>
           <p className="text-sm text-[#8899b8] mb-8 max-w-sm mx-auto">
             Find an expert mentor and book a 1-on-1 session to overcome your blockers and accelerate your learning.
           </p>
@@ -109,208 +191,50 @@ export default function MySessionsPage() {
             Browse Mentors
           </Link>
         </div>
+      ) : visible.length === 0 ? (
+        <div className="text-center py-20 glass-card border-dashed">
+          <div
+            className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+            style={{ background: 'rgba(79, 219, 200, 0.05)', border: '1px solid rgba(79, 219, 200, 0.1)' }}
+          >
+            {tab === 'upcoming' ? (
+              <CalendarClock className="w-7 h-7 text-[#4fdbc8]/60" />
+            ) : (
+              <History className="w-7 h-7 text-[#4fdbc8]/60" />
+            )}
+          </div>
+          <h3
+            className="text-lg font-extrabold text-[#dae2fd] mb-2"
+            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+          >
+            {tab === 'upcoming' ? 'Nothing scheduled' : 'No past sessions yet'}
+          </h3>
+          <p className="text-sm text-[#8899b8] mb-6 max-w-sm mx-auto">
+            {tab === 'upcoming'
+              ? 'Your booked mentorship sessions will appear here once you schedule one.'
+              : 'Completed and cancelled sessions show up here as your appointment history.'}
+          </p>
+          {tab === 'upcoming' && (
+            <Link href="/mentors" className="btn-gradient px-6 py-3 rounded-lg text-sm font-bold inline-flex items-center gap-2">
+              Browse Mentors
+            </Link>
+          )}
+        </div>
       ) : (
         <div className="space-y-6">
-          {sessions.map((session, i) => {
-            const start = new Date(session.startTime as Date);
-            const isUpcoming = start > new Date();
-            const isMentor = session.mentorId === user?.uid;
-            const dateStr = start.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-            const timeStr = `${start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(session.endTime as Date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
-
-            return (
-              <div 
-                key={session.id} 
-                className={`relative overflow-hidden rounded-2xl p-6 sm:p-8 transition-all duration-300 ${
-                  isUpcoming 
-                    ? 'glass-card border-[rgba(79,219,200,0.2)] shadow-[0_0_24px_rgba(79,219,200,0.05)] hover:border-[#4fdbc8]/40' 
-                    : 'bg-[rgba(19,27,46,0.5)] border border-[rgba(255,255,255,0.05)] opacity-80'
-                }`}
-                style={{ animationDelay: `${i * 50}ms`, animationName: 'fade-in', animationFillMode: 'both' }}
-              >
-                {isUpcoming && <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#4fdbc8] to-[#ddb7ff]" />}
-
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10 ml-2">
-                  <div className="space-y-4">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className={`px-2.5 py-1 text-xs font-bold uppercase tracking-widest rounded-md ${
-                        isUpcoming
-                          ? 'bg-[rgba(79,219,200,0.1)] text-[#4fdbc8] border border-[rgba(79,219,200,0.2)]'
-                          : 'bg-[rgba(255,255,255,0.05)] text-[#8899b8]'
-                      }`}>
-                        {isUpcoming ? 'Scheduled' : 'Completed'}
-                      </span>
-                      {session.paymentStatus === 'paid' && (
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest text-[#4fdbc8] bg-[rgba(79,219,200,0.05)] rounded-md border border-[rgba(79,219,200,0.1)]">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Paid
-                        </span>
-                      )}
-                    </div>
-
-                    <div>
-                      <h3 className="text-xl sm:text-2xl font-extrabold text-[#dae2fd] tracking-tight mb-3" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                        Session with <span className="text-[#4fdbc8]">{isMentor ? session.studentName : session.mentorName}</span>
-                      </h3>
-                      <div className="flex flex-wrap gap-4 items-center pl-1">
-                        <div className="flex items-center gap-2 text-[13px] font-bold text-[#8899b8]">
-                          <div className="w-6 h-6 rounded bg-[rgba(221,183,255,0.1)] flex items-center justify-center border border-[rgba(221,183,255,0.2)]">
-                            <Calendar className="w-3.5 h-3.5 text-[#ddb7ff]" />
-                          </div>
-                          {dateStr}
-                        </div>
-                        <div className="flex items-center gap-2 text-[13px] font-bold text-[#8899b8]">
-                          <div className="w-6 h-6 rounded bg-[rgba(79,219,200,0.1)] flex items-center justify-center border border-[rgba(79,219,200,0.2)]">
-                            <Clock className="w-3.5 h-3.5 text-[#4fdbc8]" />
-                          </div>
-                          {timeStr}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="shrink-0 md:min-w-[220px]">
-                    {isUpcoming ? (() => {
-                      const start = new Date(session.startTime as Date);
-                      const end = new Date(session.endTime as Date);
-                      const joinable = isCallJoinable(start, end);
-                      const jitsiLink = buildJitsiLink(session.id);
-                      const isCopied = copiedId === session.id;
-
-                      return (
-                        <div
-                          className="rounded-xl flex flex-col items-center text-center space-y-3 p-4"
-                          style={{
-                            background: 'rgba(15,23,37,0.7)',
-                            border: joinable
-                              ? '1px solid rgba(79,219,200,0.3)'
-                              : '1px solid rgba(79,219,200,0.1)',
-                            boxShadow: joinable ? '0 0 20px rgba(79,219,200,0.08)' : 'none',
-                          }}
-                        >
-                          <span className="text-[10px] text-[#ddb7ff] font-bold uppercase tracking-widest block">
-                            Meeting Details
-                          </span>
-
-                          {/* Join Call button — active 15 min before */}
-                          {joinable ? (
-                            <button
-                              onClick={() => handleJoinCall(session)}
-                              className="w-full btn-gradient py-2.5 rounded-lg text-[13px] font-bold shadow-[0_0_15px_rgba(79,219,200,0.25)] flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-transform"
-                            >
-                              <Video className="w-4 h-4" /> Join Call
-                            </button>
-                          ) : (
-                            <div className="w-full text-center">
-                              <button
-                                disabled
-                                className="w-full py-2.5 rounded-lg text-[13px] font-bold flex items-center justify-center gap-2 opacity-40 cursor-not-allowed"
-                                style={{ background: 'rgba(79,219,200,0.08)', border: '1px solid rgba(79,219,200,0.1)', color: '#4fdbc8' }}
-                                title="Available 15 minutes before session starts"
-                              >
-                                <Video className="w-4 h-4" /> Join Call
-                              </button>
-                              <p className="text-[10px] text-[#556780] mt-1.5">
-                                Opens 15 min before session
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Message Button inside Upcoming */}
-                          <button
-                            onClick={async () => {
-                              const { getOrCreateConversation } = await import('@/features/messages/api');
-                              if (!user || (!session.mentorName && !session.studentName)) return;
-                              const convId = await getOrCreateConversation(
-                                user.uid,
-                                profile?.name || user.displayName || 'Me',
-                                profile?.avatarUrl || '',
-                                isMentor ? session.studentId : session.mentorId,
-                                isMentor ? session.studentName : session.mentorName,
-                                isMentor ? '' : (session.mentorAvatar || '')
-                              );
-                              router.push('/messages');
-                            }}
-                            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[12px] font-bold transition-all hover:bg-[rgba(79,219,200,0.1)] text-[#4fdbc8] border border-[rgba(79,219,200,0.2)]"
-                          >
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> 
-                            Message
-                          </button>
-
-                          {/* Copy Link button */}
-                          <button
-                            onClick={() => handleCopyLink(session)}
-                            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all hover:text-[#dae2fd]"
-                            style={{
-                              background: 'rgba(255,255,255,0.03)',
-                              border: '1px solid rgba(255,255,255,0.07)',
-                              color: isCopied ? '#4fdbc8' : '#8899b8',
-                            }}
-                          >
-                            {isCopied ? (
-                              <><Check className="w-3.5 h-3.5" /> Copied!</>
-                            ) : (
-                              <><Copy className="w-3.5 h-3.5" /> Copy Meeting Link</>
-                            )}
-                          </button>
-
-                        </div>
-                      );
-                    })() : (
-                      <div className="space-y-3">
-                        {!isMentor && (
-                          <Link
-                            href={`/mentors/${session.mentorId}`}
-                            className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-bold text-[#8899b8] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[#dae2fd] transition-colors"
-                          >
-                            <User className="w-4 h-4" /> View Mentor <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                          </Link>
-                        )}
-                        <button
-                          onClick={async () => {
-                            const { getOrCreateConversation } = await import('@/features/messages/api');
-                            if (!user || (!session.mentorName && !session.studentName)) return;
-                            const convId = await getOrCreateConversation(
-                              user.uid,
-                              profile?.name || user.displayName || 'Me',
-                              profile?.avatarUrl || '',
-                              isMentor ? session.studentId : session.mentorId,
-                              isMentor ? session.studentName : session.mentorName,
-                              isMentor ? '' : (session.mentorAvatar || '')
-                            );
-                            router.push('/messages');
-                          }}
-                          className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-bold transition-all hover:bg-[rgba(79,219,200,0.1)] text-[#4fdbc8] border border-[rgba(79,219,200,0.2)]"
-                        >
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> 
-                          Message
-                        </button>
-                        {/* Rate Session — student only, one time */}
-                        {!isMentor && !session.ratingSubmitted && (
-                          <button
-                            onClick={() => setRatingSession(session)}
-                            className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-bold transition-all hover:-translate-y-0.5 border"
-                            style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.08), rgba(221,183,255,0.08))', borderColor: 'rgba(251,191,36,0.25)', color: '#fbbf24' }}
-                          >
-                            <Star className="w-4 h-4" /> Rate this session
-                          </button>
-                        )}
-                        {!isMentor && session.ratingSubmitted && (
-                          <div className="w-full flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-[12px] font-bold text-[#8899b8]" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" /> Rated
-                          </div>
-                        )}
-                      </div>
-
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {visible.map((session, i) => (
+            <SessionCard
+              key={session.id}
+              session={session}
+              index={i}
+              isMentor={session.mentorId === user?.uid}
+              onRate={setRatingSession}
+            />
+          ))}
         </div>
       )}
 
-      {/* Rating Modal */}
+      {/* ── Rating Modal ── */}
       {ratingSession && user && (
         <RateSessionModal
           sessionId={ratingSession.id}
@@ -320,8 +244,8 @@ export default function MySessionsPage() {
           onClose={() => setRatingSession(null)}
           onSuccess={() => {
             setRatingSession(null);
-            setSessions(prev =>
-              prev.map(s => s.id === ratingSession.id ? { ...s, ratingSubmitted: true } : s)
+            setSessions((prev) =>
+              prev.map((s) => (s.id === ratingSession.id ? { ...s, ratingSubmitted: true } : s)),
             );
           }}
         />

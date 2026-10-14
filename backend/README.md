@@ -52,11 +52,12 @@ All collections below live in the `asia-south1` Firestore database.
 
 | Collection (path) | Stores | Primary readers / writers |
 |---|---|---|
-| `users` | Auth profiles: role, display name, streak, reputation, karma, onboarding state | Auth flow, TopHeader (chips), admin |
+| `users` | Auth profiles: role, display name, streak, reputation, karma, onboarding state, **selected pricing plan** | Auth flow, TopHeader (chips), admin, `/pricing` |
 | `mentors` | Mentor profile: bio, subjects, fees, **aggregate** `averageRating` / `totalRatings` / `sessionCount` | Mentor directory + smart ranking, rating flow |
 | `mentorSlots` | Mentor availability slots (1 doc per session slot) | Mentor slot manager, booking transaction |
 | `bookings` | Session bookings: student/mentor ids, slot, status | Booking flow, "My sessions", cron reminders |
 | `mentorRatings` | Individual star rating + review per session | `RateSessionModal` |
+| `searchHistory` | Per-user recent searches (one doc per unique term, capped at 50) | `GlobalSearch` overlay, `RecentSearches` on feed/mentors/messages |
 | `doubts` | Doubt posts for the feed (title, body, tags, votes, resolve flag) | Feed, admin moderation |
 | `answers` | Answer posts (one doc per answer, `doubtId` field): text, votes, `isAccepted` | Doubt thread, reputation/achievements |
 | `conversations` | 1:1 chat metadata: participants, last message, per-user unread counts | Messages feature |

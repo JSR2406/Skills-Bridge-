@@ -12,6 +12,8 @@ import {
   getOrCreateConversation,
 } from '@/features/messages/api';
 import { Conversation, ChatMessage } from '@/features/messages/types';
+import { recordSearch, readQueryParam } from '@/features/search/api';
+import { RecentSearches } from '@/features/search/components/RecentSearches';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -154,6 +156,18 @@ export default function MessagesPage() {
     }
   };
 
+  // Adopt "?q=" handed over by the global header search — opens the new-chat
+  // panel and runs the lookup. Runs after mount so the prerendered markup and
+  // the first client render stay identical.
+  useEffect(() => {
+    const initial = readQueryParam('q');
+    if (!initial) return;
+    setUserSearchQuery(initial);
+    setShowNewChat(true);
+    searchUsers(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const openConvWithUser = async (other: any) => {
     if (!user || !profile) return;
     const convId = await getOrCreateConversation(
@@ -175,6 +189,12 @@ export default function MessagesPage() {
     const name = otherId ? c.participantNames[otherId] : '';
     return name.toLowerCase().includes(searchQuery.toLowerCase());
   });
+
+  /** Persist a search the user committed with Enter, so it shows up in recent searches. */
+  const commitSearch = useCallback((term: string, hits: number) => {
+    if (!user || !term.trim()) return;
+    recordSearch(user.uid, term, 'messages', hits).catch(console.error);
+  }, [user]);
 
   return (
     <div className="h-full w-full flex md:rounded-xl border-0 md:border overflow-hidden md:glass-card animate-fade-in relative bg-[rgba(11,19,38,0.6)] md:bg-transparent">
@@ -214,6 +234,9 @@ export default function MessagesPage() {
                   setUserSearchQuery(e.target.value);
                   searchUsers(e.target.value);
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitSearch(userSearchQuery, searchResults.length);
+                }}
                 placeholder="Search users..."
                 className="w-full h-9 pl-9 pr-3 text-sm text-[#dae2fd] placeholder:text-[#8899b8]/60 rounded-lg outline-none"
                 style={{
@@ -229,6 +252,9 @@ export default function MessagesPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitSearch(searchQuery, filteredConvs.length);
+                }}
                 placeholder="Search conversations..."
                 className="w-full h-9 pl-9 pr-3 text-sm text-[#dae2fd] placeholder:text-[#8899b8]/60 rounded-lg outline-none"
                 style={{
@@ -274,7 +300,15 @@ export default function MessagesPage() {
             ) : userSearchQuery.length >= 2 ? (
               <p className="text-center text-sm text-[#8899b8] py-8">No users found</p>
             ) : (
-              <p className="text-center text-xs text-[#8899b8]/60 py-8">Type at least 2 characters to search</p>
+              <RecentSearches
+                userId={user?.uid}
+                source="messages"
+                query={userSearchQuery}
+                onSelect={(term) => {
+                  setUserSearchQuery(term);
+                  searchUsers(term);
+                }}
+              />
             )}
           </div>
         )}

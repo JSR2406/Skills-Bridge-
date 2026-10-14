@@ -70,7 +70,7 @@ All paths below are relative to the **repo root** — the app source lives under
 │   │   │   │   ├── layout.tsx  #     auth guard, daily-login, push subscription, AppShell
 │   │   │   │   └── <route>/    #     feed, ask, mentors, sessions, mentor-slots, tests,
 │   │   │   │                   #     productivity, messages, call, leaderboard,
-│   │   │   │                   #     notifications, profile, settings, admin, seed, onboarding
+│   │   │   │                   #     notifications, profile, pricing, settings, admin, seed, onboarding
 │   │   │   └── api/            #   server-only BFF routes (see §6)
 │   │   ├── components/
 │   │   │   ├── layout/         #   AppShell, Sidebar, TopHeader, MobileNav
@@ -79,6 +79,8 @@ All paths below are relative to the **repo root** — the app source lives under
 │   │   ├── features/           #   domain-driven modules (see §5)
 │   │   ├── lib/                #   cross-cutting utilities & integrations
 │   │   │   ├── firebase/config.ts   #   Firebase client init (singleton)
+│   │   │   ├── ai/models.ts        #   per-task OpenRouter model routing
+│   │   │   ├── ai/openrouter.ts    #   shared AI client + JSON extraction
 │   │   │   ├── ai/productivityCoach.ts
 │   │   │   ├── razorpay/client.ts
 │   │   │   └── badges.ts / utils.ts
@@ -104,7 +106,9 @@ All paths below are relative to the **repo root** — the app source lives under
 |-----------------|-------------------------------------------------------------|----------------------|
 | `auth`          | Firebase auth state, profile provisioning, useAuth()        | `store.ts`, `components/AuthProvider.tsx`, `hooks/useAuth.ts` |
 | `doubts`        | Doubt feed CRUD, atomic voting, answers, AI explanation UI  | `api/doubts.ts`, `api/answers.ts`, `components/*` |
-| `mentors`       | Mentor profiles, slot CRUD, **transactional booking**, post-session rating, admin approvals, **recommendation engine** | `api.ts`, `recommendation/*` |
+| `mentors`       | Mentor profiles, slot CRUD, **transactional booking**, post-session rating, admin approvals, **recommendation engine** | `api.ts`, `components/SessionCard.tsx`, `recommendation/*` |
+| `search`        | **Global search overlay** (doubts + mentors + people) and **per-user search history** | `api.ts`, `components/GlobalSearch.tsx`, `components/RecentSearches.tsx` |
+| `pricing`       | Plan catalogue, plan comparison, `users/{uid}.plan` persistence | `plans.ts`, `api.ts`, `components/*` |
 | `tests`         | Practice tests + attempts                                    | `api.ts` |
 | `productivity`  | Task CRUD, AI study-plan UI, activity-context aggregation    | `api.ts`, `components/*` |
 | `messages`      | Direct chat with mentors (Firestore realtime)                | `api.ts` |
@@ -115,6 +119,10 @@ All paths below are relative to the **repo root** — the app source lives under
 **Client/Server firebreak:** `features/*` run on the client and talk to Firestore directly
 (protected by `firestore.rules`). Anything that needs a secret (AI keys, Razorpay secret,
 VAPID private key, cron auth) goes through `src/app/api/*`.
+
+**Cross-feature import exception:** `features/search` is the single module allowed to import
+other features' *read* APIs (`doubts`, `mentors`) — search is cross-cutting by definition and
+its own writes stay inside `searchHistory`. Everything else keeps the firebreak.
 
 ## 6. API Routes (server-side)
 
@@ -140,11 +148,12 @@ Collection paths used across the app:
 
 | Collection                 | Purpose                                                        |
 |----------------------------|----------------------------------------------------------------|
-| `users/{uid}`              | User profile: role, reputation, streak, badges, counts, budgetCeiling |
+| `users/{uid}`              | User profile: role, reputation, streak, badges, counts, budgetCeiling, **plan** |
 | `mentors/{userId}`         | Mentor profile: subjects, expertise, fee, ratings, `mentorApproved` |
 | `mentorSlots/{slotId}`     | Availability slot: start/end, fee, `isBooked`, meetingLink    |
 | `bookings/{bookingId}`     | Session booking: slot/mentor/student, Razorpay ids, status, `ratingSubmitted`, reminder flags |
 | `mentorRatings/{id}`       | Post-session rating docs (1–5 + comment)                      |
+| `searchHistory/{userId_term}` | Per-user recent searches (term, source, `timesSearched`, `lastSearchedAt`) — capped at 50/user |
 | `doubts/{doubtId}`         | Doubt posts: votes, responsesCount, isResolved                |
 | `answers/{answerId}`       | Answers: `doubtId`, isAccepted, content (TipTap HTML)          |
 | `votes/{userId_doubtId}`   | One vote per user per doubt (idempotency key)                 |
@@ -162,6 +171,47 @@ Index dependencies: `firestore.indexes.json` declares the composite indexes used
 ordered/where queries (answers by doubt, attempts by user, bookings by student, etc.).
 
 ## 8. Key Data Flows
+
+### AI layer (model routing + reasoning)
+Every AI route goes through one transport, `lib/ai/openrouter.ts`:
+```
+app/api/* → chatCompletion({ task, messages })
+              ├─ getModel(task)      # OPENROUTER_MODEL_<TASK> → OPENROUTER_MODEL → default
+              ├─ POST openrouter.ai  # fails? → retry once on openrouter/free
+              └─ extractJson<T>()    # strips fences/prose, finds the balanced object
+```
+| Task | Default model | Why |
+|---|---|---|
+| `doubt` | `deepseek/deepseek-r1` | long multi-step self-checked answers |
+| `coach` | `deepseek/deepseek-r1` | plans that weigh the user's real activity |
+| `test` | `google/gemini-2.0-flash-001` | small structured MCQ payload |
+| `diagram` | `google/gemini-2.0-flash-001` | Mermaid syntax, no reasoning needed |
+| `tags` | `google/gemini-2.0-flash-001` | ~5 tokens of output |
+
+`openrouter/free` is never a default — it is the **fallback** retried once when the
+configured model is unavailable (no credits, disabled, 5xx). The app degrades in answer
+quality instead of erroring at the user.
+
+### Enhanced reasoning (`POST /api/ai/doubt`)
+The doubt engine runs an explicit protocol instead of "answer the question":
+1. **Restate** — rewrite the doubt; if ambiguous, state the assumed interpretation and answer that
+2. **Reason** — pick the governing concept, reject one plausible alternative approach
+3. **Solve** — numbered steps that say *why*, not just *how*
+4. **Verify** — re-check arithmetic/signs/units/edge cases, name any residual caveat
+5. **Calibrate** — return `confidence: high | medium | low`
+
+The response adds `reasoning`, `workedExample`, `keyConcepts`, `verification` and `confidence`
+alongside the original fields; `AIExplanationDisplay` renders each as its own section, and
+`normaliseExplanation()` guarantees every field is present so the UI never guards against
+missing keys. Reasoning scratchpads (`<think>…`, the `reasoning` field) are stripped before
+parsing.
+
+### Pricing & plans
+`/pricing` renders a static catalogue (`features/pricing/plans.ts`) for two audiences —
+students (Explorer / Scholar / Campus) and mentors (Starter / Pro Mentor / Campus Partner).
+Only the **selection** is persisted, on `users/{uid}.plan`; paid tiers are shown but disabled
+("Coming soon") because Razorpay *subscriptions* are not wired up — session payments are.
+Mentor tiers carry a `payoutRate` (85% / 95% of each session fee).
 
 ### AI-first doubt resolution
 ```
@@ -189,6 +239,30 @@ flag slot** in a Firestore `runTransaction`:
 - Reminders: Vercel cron (`0 0 * * *`) hits `/api/cron/session-reminders` (bearer
   `CRON_SECRET`); **at-most-once** via atomic `reminderSent30min/reminderSent5min` flags.
 
+### Search & search history
+```
+Header / page search box → searchAll()  ──┬── fetchDoubts(80)      → ranked in memory
+                                           ├── getApprovedMentors() → ranked in memory
+                                           └── users.name range query
+   └→ recordSearch(uid, term, source, hits)   # searchHistory/{uid_term}, merged + bumped
+Recent-searches dropdown ← subscribeToSearchHistory(uid)   # userId ==, lastSearchedAt desc
+Enter / click → /feed?q=…  /  /mentors?q=…  /  /messages?q=…
+```
+- **Ranking:** no full-text index in Firestore, so a bounded recent window is scored in memory
+  (title/name exact > prefix > contains > tag/subject > body). ~180 ms debounce.
+- **History:** one doc per **unique term per user** (`{userId}_{encodedTerm}`), so repeat searches
+  merge (`timesSearched`, `lastSearchedAt`, `sources`) instead of duplicating. Entries past
+  `MAX_HISTORY_ENTRIES` (50) are pruned in the background, throttled to once a minute per user.
+- Needs the `searchHistory` composite index (`userId` ASC + `lastSearchedAt` DESC) declared in
+  `backend/config/firestore.indexes.json`.
+
+### Session history
+`/sessions` subscribes to `subscribeToUserSessions()` (bookings where the user is student **or**
+mentor) and splits the list at `startTime`: **Upcoming** (join / message / copy link) vs **Past**
+(the appointment history — payment status, rating prompt, "book another session"). A stat row
+surfaces upcoming count, sessions attended, hours learned and total paid; each stat doubles as a
+tab shortcut. The card itself lives in `features/mentors/components/SessionCard.tsx`.
+
 ### Smart Mentor Recommendation (heuristic, not ML)
 `features/mentors/recommendation/` — deterministic scorer (pure functions):
 `Topic Match 40 + Rating 25 + Availability 20 + Novelty 10 + Budget 5 = /100`.
@@ -212,6 +286,8 @@ See `.env.example` for the full list:
 |---------------------------------------|-----------------------------------------------|
 | `NEXT_PUBLIC_FIREBASE_*`              | client Firebase init (`lib/firebase/config.ts`) |
 | `OPENROUTER_API_KEY`                  | all `app/api/ai/*` + productivity routes       |
+| `OPENROUTER_MODEL`                    | override the model for **every** AI task       |
+| `OPENROUTER_MODEL_DOUBT` / `_COACH` / `_TEST` / `_DIAGRAM` / `_TAGS` | per-task override (wins over `OPENROUTER_MODEL`) |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | server-side order/verify                  |
 | `NEXT_PUBLIC_RAZORPAY_KEY_ID`         | client checkout.js                            |
 | `VAPID_EMAIL` / `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | web push |
