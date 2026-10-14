@@ -28,7 +28,7 @@ SkillBridge is a **peer-to-peer AI learning platform** for college students. A s
 | Diagrams         | Mermaid.js (AI-generated concept diagrams)                               |
 | Payments         | Razorpay (server-side orders + signature verification)                   |
 | Push             | Web Push (service worker) + Firestore in-app notifications + Vercel cron |
-| Deployment       | **Vercel** (server routes + crons, root dir = `frontend/` via root `vercel.json` `rootDirectory`). Firestore rules/indexes via Firebase CLI |
+| Deployment       | **Vercel** (server routes + crons, project **Root Directory = `frontend/`**). Firestore rules/indexes via Firebase CLI |
 | Repo layout      | Monorepo: `frontend/` (Next.js app) + `backend/` (Firebase config, seeds) |
 
 ## 3. High-Level Architecture
@@ -87,7 +87,7 @@ All paths below are relative to the **repo root** — the app source lives under
 │   │   ├── store/useAppStore.ts     #   UI prefs (theme, sidebar)
 │   │   └── styles/                  #   globals.css + design tokens
 │   ├── public/sw.js            # push-notification service worker (/sw.js)
-│   ├── vercel.json             # cron schedule: /api/cron/session-reminders
+│   ├── vercel.json             # read by Vercel (Root Directory = frontend/): cron /api/cron/session-reminders
 │   └── next.config.ts / tsconfig.json / postcss.config.mjs / eslint.config.mjs
 ├── backend/                    # Firebase server-side config + CLI tooling (not deployed)
 │   ├── config/                 #   firebase.json, .firebaserc, firestore.rules, firestore.indexes.json
@@ -305,9 +305,12 @@ See `.env.example` for the full list:
 - **Legacy CLI seed:** `cd backend && npm run seed` → `backend/scripts/seed.ts`
   (seeds mentors + conversations; needs `NEXT_PUBLIC_FIREBASE_*` env vars).
 - **Secrets:** VAPID keypair generation → `cd backend && npm run vapid:generate`.
-- **Build:** `cd frontend && npm run build` (Vercel runs this automatically inside
-  `frontend/` because the repo-root [`vercel.json`](../vercel.json) sets
-  `rootDirectory: "frontend"` — no dashboard setting needed).
+- **Build:** `cd frontend && npm run build`. Vercel builds `frontend/` automatically because the
+  **project's Root Directory is set to `frontend`** (Vercel → Settings → General → Root Directory).
+  `rootDirectory` is **not** a valid key in `vercel.json` — putting it in a repo-root `vercel.json`
+  fails schema verification and the build dies before it starts. There is deliberately no
+  repo-root `vercel.json`; the cron config lives in `frontend/vercel.json`, which is what Vercel
+  reads once the Root Directory is `frontend`.
 
 ## 12. Conventions
 
