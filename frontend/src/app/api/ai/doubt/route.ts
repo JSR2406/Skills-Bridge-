@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { chatCompletion, extractJson } from '@/lib/ai/openrouter';
 import { FALLBACK_MODEL } from '@/lib/ai/models';
 import { deterministicValidate } from '@/lib/ai/validation/deterministic';
-import type { AIExplanation } from '@/features/doubts/types';
+import { type AIExplanation } from '@/features/doubts/types';
 
 const apiKey = process.env.OPENROUTER_API_KEY || '';
 const validationShadowMode = process.env.NEXT_PUBLIC_AI_VALIDATION_SHADOW_MODE !== 'false';
@@ -24,6 +24,7 @@ Return valid JSON only.`;
 function normaliseExplanation(raw: Record<string, unknown>, title: string): AIExplanation {
   const str = (v: unknown, fallback = ''): string =>
     typeof v === 'string' && v.trim() ? v.trim() : fallback;
+
   const arr = (v: unknown): string[] =>
     Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0) : [];
 
