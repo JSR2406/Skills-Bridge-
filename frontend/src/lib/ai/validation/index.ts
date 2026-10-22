@@ -1,15 +1,30 @@
-// ── LIB: AI — validation scaffolding
-// The broader validation engine is implemented in stages. This file keeps the
-// public API stable enough for future tasks without changing existing routes.
-
 export type ValidationVerdict = 'pass' | 'fail' | 'needs_review' | 'unknown';
+export type AIConfidence = 'high' | 'medium' | 'low';
+
+export interface CriticValidationResult {
+  verdict: 'pass' | 'revise' | 'fail';
+  scores: {
+    correctness: number;
+    soundness: number;
+    completeness: number;
+    clarity: number;
+    honesty: number;
+  };
+  issues: string[];
+  fix: string;
+  confidence: AIConfidence;
+}
 
 export interface AIValidationResult {
   verdict: ValidationVerdict;
   score: number;
   checks: string[];
   issues: string[];
-  confidence?: 'high' | 'medium' | 'low';
+  confidence?: AIConfidence;
+  critic?: CriticValidationResult;
+  tier0?: AIValidationResult;
+  tier1?: AIValidationResult;
+  tier2?: AIValidationResult;
 }
 
 export function createValidationResult(
@@ -17,7 +32,8 @@ export function createValidationResult(
   score: number,
   checks: string[] = [],
   issues: string[] = [],
-  confidence: AIValidationResult['confidence'] = 'medium',
+  confidence: AIConfidence = 'medium',
+  critic?: CriticValidationResult,
 ): AIValidationResult {
   return {
     verdict,
@@ -25,10 +41,11 @@ export function createValidationResult(
     checks,
     issues,
     confidence,
+    critic,
   };
 }
 
-export function validationSummary(value: unknown): AIValidationResult {
+export function summariseValidation(value: unknown): AIValidationResult {
   if (typeof value === 'object' && value !== null && 'verdict' in value) {
     const candidate = value as Partial<AIValidationResult>;
     return createValidationResult(
@@ -37,6 +54,7 @@ export function validationSummary(value: unknown): AIValidationResult {
       Array.isArray(candidate.checks) ? candidate.checks.filter((item): item is string => typeof item === 'string') : [],
       Array.isArray(candidate.issues) ? candidate.issues.filter((item): item is string => typeof item === 'string') : [],
       candidate.confidence ?? 'medium',
+      candidate.critic,
     );
   }
 
