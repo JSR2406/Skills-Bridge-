@@ -11,7 +11,7 @@
 // configured model is unavailable on the account (no credits, model disabled,
 // transient provider error). See `openrouter.ts` for the automatic retry.
 
-export type AITask = 'doubt' | 'coach' | 'test' | 'diagram' | 'tags';
+export type AITask = 'doubt' | 'coach' | 'test' | 'diagram' | 'tags' | 'tutor' | 'verify';
 
 /** Always-available route, used as the last-resort retry model. */
 export const FALLBACK_MODEL = 'openrouter/free';
@@ -21,6 +21,8 @@ const DEFAULT_MODELS: Record<AITask, string> = {
   // worth the extra tokens and latency.
   doubt: 'deepseek/deepseek-r1',
   coach: 'deepseek/deepseek-r1',
+  tutor: 'google/gemini-2.0-flash-001',
+  verify: 'google/gemini-2.0-flash-001',
 
   // Cheap + fast: small structured payloads (MCQs, tags, Mermaid) where a
   // reasoning pass adds latency without adding insight.
