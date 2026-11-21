@@ -1,62 +1,26 @@
-# 🌟 SkillBridge
+# SkillBridge
 
-Peer-to-peer AI learning platform — real-time doubt resolution, AI tutoring,
-mentorship, productivity coaching, and gamification.
+A peer-learning web app for college students to ask questions, use an AI tutor, find mentors, and track study activity. The Next.js app contains the browser UI and server routes. Firebase provides authentication and persistence.
 
-> **Full architecture reference:** [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)
+## Repository layout
 
-## 📦 Monorepo layout
+| Path | Purpose |
+| --- | --- |
+| [frontend/src/app](frontend/src/app) | Pages and Next.js API routes |
+| [frontend/src/features](frontend/src/features) | Doubts, mentor workflows, messaging, productivity, and reputation |
+| [frontend/src/lib](frontend/src/lib) | Firebase, AI, and payment integrations |
+| [backend/config](backend/config) | Firebase and Firestore configuration |
+| [backend/scripts](backend/scripts) | Seed and maintenance tooling |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Data model, module boundaries, and API reference |
 
-```
-skillsbridge/
-├── frontend/          # Next.js 16 app (React 19, TypeScript) — deployable on Vercel
-│   ├── src/           #   app (pages + BFF API routes), components, features, lib, store
-│   ├── public/        #   static assets + service worker (sw.js)
-│   ├── package.json   #   frontend dependencies + build/dev scripts
-│   ├── vercel.json    #   cron schedule (session reminders)
-│   └── README.md      #   app features, demo credentials, judging guide
-├── backend/           # Firebase config & CLI tooling — NOT deployed to Vercel
-│   ├── config/        #   firebase.json, firestore.rules, firestore.indexes.json
-│   ├── scripts/       #   seed tooling (demo + mentor admin seeds), VAPID generator
-│   ├── package.json   #   backend deps (firebase-admin, tsx) + seed scripts
-│   └── README.md      #   Firebase data model + "what lives in which region" map
-├── vercel.json        #   rootDirectory: "frontend" → Vercel deploys the app with no setting changes
-├── docs/              # Architecture documentation
-└── PROJECT_OVERVIEW.md
-```
+## Run locally
 
-## 🚀 Quick start
-
-**1. Frontend (the app)**
+Use Node.js 20.9 or later and npm. From the repository root, install the app dependencies and copy [the Firebase configuration example](frontend/.env.example) to `frontend/.env.local`. Fill it with settings from a development Firebase web app.
 
 ```bash
 cd frontend
-npm install          # or npm ci
-npm run dev          # http://localhost:3000  (needs .env.local — see .env.example)
-```
-
-**2. Backend (Firebase + seeds)** — see [`backend/README.md`](./backend/README.md)
-
-```bash
-cd backend
 npm install
-npm run seed:mentors   # emulator-first mentor/student seed
+npm run dev
 ```
 
-## ☁️ Deployment
-
-| Surface | Where | How |
-|---|---|---|
-| **App + API routes** | Vercel | Auto — the root [`vercel.json`](./vercel.json) sets `rootDirectory` to `frontend/`, so deploys build the app with **no dashboard change needed** |
-| **Vercel cron** | `frontend/vercel.json` | Daily `00:00 UTC` → `GET /api/cron/session-reminders` |
-| **Firestore rules/indexes** | Firebase | `firebase deploy --only firestore` from `backend/` |
-| **Auth / Storage** | Firebase | Configured in Firebase console / `backend/config/firebase.json` |
-
-## 📖 Docs
-
-- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — module map, data flows, API reference
-- [`backend/README.md`](./backend/README.md) — Firestore data model + region map
-- [`frontend/README.md`](./frontend/README.md) — app features, demo accounts, test guide
-- [`PROJECT_OVERVIEW.md`](./PROJECT_OVERVIEW.md) — product overview
-
-**Live demo:** https://skillsbridge-jet.vercel.app/
+Open http://localhost:3000. For code checks, run `npm run lint`, `npm test`, and `npm run build` from `frontend/`. Review the [project overview](PROJECT_OVERVIEW.md) for the AI, notification, and mentor workflows. Test bookings and payments with sandbox services and test accounts.
